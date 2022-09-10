@@ -1,6 +1,6 @@
 
 // SIMU
-// `define TEST_
+`define TEST_
 
 /*****************************************************************************/
             // QUARK_NUCLEO
@@ -370,17 +370,16 @@ endmodule
 /**********************************************************************************************************/
 // We got a total of 20 bits for 1-hot addressing of IO registers.
 
-localparam IO_LEDS_bit                  = 0;  // RW four leds
-localparam IO_UART_DAT_bit              = 1;  // RW write: data to send (8 bits) read: received data (8 bits)
-localparam IO_UART_CNTL_bit             = 2;  // R  status. bit 8: valid read data. bit 9: busy sending
+// localparam IO_UART_DAT_bit              = 1;  // RW write: data to send (8 bits) read: received data (8 bits)
+// localparam IO_UART_CNTL_bit             = 2;  // R  status. bit 8: valid read data. bit 9: busy sending
 
 // The three constant hardware config registers, using the three last bits of IO address space
-localparam IO_HW_CONFIG_RAM_bit     = 17;  // R  total quantity of RAM, in bytes
-localparam IO_HW_CONFIG_DEVICES_bit = 18;  // R  configured devices
-localparam IO_HW_CONFIG_CPUINFO_bit = 19;  // R  CPU information CPL(6) FREQ(10) RESERVED(16)
+// localparam IO_HW_CONFIG_RAM_bit     = 17;  // R  total quantity of RAM, in bytes
+// localparam IO_HW_CONFIG_DEVICES_bit = 18;  // R  configured devices
+// localparam IO_HW_CONFIG_CPUINFO_bit = 19;  // R  CPU information CPL(6) FREQ(10) RESERVED(16)
 
 // These devices do not have hardware registers. Just a bit set in IO_HW_CONFIG_DEVICES
-localparam IO_MAPPED_SPI_FLASH_bit  = 20;  // no register (just there to indicate presence)
+// localparam IO_MAPPED_SPI_FLASH_bit  = 20;  // no register (just there to indicate presence)
 
 module HardwareConfig(
     input wire 	       clk, 
@@ -400,10 +399,10 @@ module HardwareConfig(
 localparam NRV_DEVICES = 0
 		    
 `ifdef NRV_IO_UART
-   | (1 << IO_UART_DAT_bit) | (1 << IO_UART_CNTL_bit)
+   | (1 << 1) | (1 << 2)
 `endif			    			    
 `ifdef NRV_MAPPED_SPI_FLASH
-   | (1 << IO_MAPPED_SPI_FLASH_bit)
+   | (1 << 20)
 `endif			    	 
 ;
    
@@ -721,9 +720,9 @@ module femtosoc(
 wire [31:0] hwconfig_rdata;
 HardwareConfig hwconfig(
    .clk(clk),			
-   .sel_memory(io_word_address[IO_HW_CONFIG_RAM_bit]),
-   .sel_devices(io_word_address[IO_HW_CONFIG_DEVICES_bit]),
-   .sel_cpuinfo(io_word_address[IO_HW_CONFIG_CPUINFO_bit]),			
+   .sel_memory(io_word_address[17]),
+   .sel_devices(io_word_address[18]),
+   .sel_cpuinfo(io_word_address[19]),			
    .rdata(hwconfig_rdata)			 
 );
 `endif
@@ -780,8 +779,8 @@ HardwareConfig hwconfig(
       .clk(clk),
       .rstrb(io_rstrb),	     	     
       .wstrb(io_wstrb),
-      .sel_dat(io_word_address[IO_UART_DAT_bit]),
-      .sel_cntl(io_word_address[IO_UART_CNTL_bit]),	     
+      .sel_dat(io_word_address[1]),
+      .sel_cntl(io_word_address[2]),	     
       .wdata(io_wdata),
       .rdata(uart_rdata),
       .RXD(RXD_internal),
