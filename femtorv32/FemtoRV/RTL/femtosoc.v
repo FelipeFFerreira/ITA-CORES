@@ -1,0 +1,824 @@
+
+// SIMU
+// `define TEST_
+
+/*****************************************************************************/
+            // QUARK_NUCLEO
+/*****************************************************************************/
+
+`ifdef TEST_
+   `define BENCH
+`endif
+
+module FemtoRV32(
+   input 	     clk,
+
+   output [31:0] mem_addr,  // address bus
+   output [31:0] mem_wdata, // data to be written
+   output [3:0]  mem_wmask, // write mask for the 4 bytes of each word
+   input  [31:0] mem_rdata, // input lines for both data and instr
+   output 	     mem_rstrb, // active to initiate memory read (used by IO)
+   input 	     mem_rbusy, // asserted if memory is busy reading value
+   input 	     mem_wbusy, // asserted if memory is busy writing value
+
+   input 	     reset      // set to 0 to reset the processor
+);
+
+
+`ifdef NRV_COUNTER_WIDTH
+   reg [`NRV_COUNTER_WIDTH-1:0]  cycles;   
+`else   
+   reg [31:0]  cycles;
+`endif  
+/***************************************************************************/
+   // Program counter and branch target computation.
+   /***************************************************************************/
+   parameter ADDR_WIDTH       = 24;           
+   reg  [ADDR_WIDTH-1:0] PC; // The program counter.
+   reg  [31:2] instr;        // Latched instruction. Note that bits 0 and 1 are
+                             // ignored (not used in RV32I base instr set).
+
+   parameter RESET_ADDR       = 32'h00000000; 
+
+
+   localparam ADDR_PAD = {(32-ADDR_WIDTH){1'b0}}; // 32-bits padding for addrs
+
+
+/*************************************************************************/
+   // And, last but not least, the state machine.
+   /*************************************************************************/
+
+   localparam FETCH_INSTR_bit     = 0;
+   localparam WAIT_INSTR_bit      = 1;
+   localparam EXECUTE_bit         = 2;
+   localparam WAIT_ALU_OR_MEM_bit = 3;
+   localparam NB_STATES           = 4;
+
+   localparam FETCH_INSTR     = 1 << FETCH_INSTR_bit;
+   localparam WAIT_INSTR      = 1 << WAIT_INSTR_bit;
+   localparam EXECUTE         = 1 << EXECUTE_bit;
+   localparam WAIT_ALU_OR_MEM = 1 << WAIT_ALU_OR_MEM_bit;
+   
+   
+   reg [NB_STATES-1:0] state;
+
+  /***************************************************************************/
+   // The register file.
+   /***************************************************************************/
+   
+   reg [31:0] rs1;
+   reg [31:0] rs2;
+   reg [31:0] registerFile [31:0];
+
+////////////////
+// The destination register
+	wire [4:0] 	  rdId = instr[11:7];
+
+	// The ALU function, decoded in 1-hot form (doing so reduces LUT count)
+	// It is used as follows: funct3Is[val] <=> funct3 == val
+
+	wire [7:0] 	  funct3Is = 8'b00000001 << instr[14:12];
+
+	// The five immediate formats, see RiscV reference (link above), Fig. 2.4 p. 12
+	wire [31:0]   Uimm = {    instr[31],   instr[30:12], {12{1'b0}}};
+	wire [31:0]   Iimm = {{21{instr[31]}}, instr[30:20]};
+	/* verilator lint_off UNUSED */ // MSBs of SBJimms are not used by addr adder. 
+	wire [31:0]   Simm = {{21{instr[31]}}, instr[30:25],instr[11:7]};
+	wire [31:0]   Bimm = {{20{instr[31]}}, instr[7],instr[30:25],instr[11:8],1'b0};
+	wire [31:0]   Jimm = {{12{instr[31]}}, instr[19:12],instr[20],instr[30:21],1'b0};
+	/* verilator lint_on UNUSED */
+
+   // Base RISC-V (RV32I) has only 10 different instructions !
+   wire isLoad    =  (instr[6:2] == 5'b00000); // rd <- mem[rs1+Iimm]
+   wire isALUimm  =  (instr[6:2] == 5'b00100); // rd <- rs1 OP Iimm
+   wire isAUIPC   =  (instr[6:2] == 5'b00101); // rd <- PC + Uimm
+   wire isStore   =  (instr[6:2] == 5'b01000); // mem[rs1+Simm] <- rs2
+   wire isALUreg  =  (instr[6:2] == 5'b01100); // rd <- rs1 OP rs2
+   wire isLUI     =  (instr[6:2] == 5'b01101); // rd <- Uimm
+   wire isBranch  =  (instr[6:2] == 5'b11000); // if(rs1 OP rs2) PC<-PC+Bimm
+   wire isJALR    =  (instr[6:2] == 5'b11001); // rd <- PC+4; PC<-rs1+Iimm
+   wire isJAL     =  (instr[6:2] == 5'b11011); // rd <- PC+4; PC<-PC+Jimm
+   wire isSYSTEM  =  (instr[6:2] == 5'b11100); // rd <- cycles
+
+   wire isALU = isALUimm | isALUreg;
+
+
+   // First ALU source, always rs1
+   wire [31:0] aluIn1 = rs1;
+
+   // Second ALU source, depends on opcode:
+   //    ALUreg, Branch:     rs2
+   //    ALUimm, Load, JALR: Iimm
+   wire [31:0] aluIn2 = isALUreg | isBranch ? rs2 : Iimm;
+
+   reg  [31:0] aluReg;       // The internal register of the ALU, used by shift.
+   reg  [4:0]  aluShamt;     // Current shift amount.
+
+   wire aluBusy = |aluShamt; // ALU is busy if shift amount is non-zero.
+   wire aluWr;               // ALU write strobe, starts shifting.
+
+   // The adder is used by both arithmetic instructions and JALR.
+   wire [31:0] aluPlus = aluIn1 + aluIn2;
+
+
+   // Use a single 33 bits subtract to do subtraction and all comparisons
+   // (trick borrowed from swapforth/J1)
+   wire [32:0] aluMinus = {1'b1, ~aluIn2} + {1'b0,aluIn1} + 33'b1;
+   wire        LT  = (aluIn1[31] ^ aluIn2[31]) ? aluIn1[31] : aluMinus[32];
+   wire        LTU = aluMinus[32];
+   wire        EQ  = (aluMinus[31:0] == 0);
+
+
+ // A separate adder to compute the destination of load/store.
+   // testing instr[5] is equivalent to testing isStore in this context.
+   wire [ADDR_WIDTH-1:0] loadstore_addr = rs1[ADDR_WIDTH-1:0] + 
+		   (instr[5] ? Simm[ADDR_WIDTH-1:0] : Iimm[ADDR_WIDTH-1:0]);
+
+   assign mem_addr = {ADDR_PAD, 
+		       state[WAIT_INSTR_bit] | state[FETCH_INSTR_bit] ? 
+		       PC : loadstore_addr
+		     };
+
+wire [15:0] LOAD_halfword = loadstore_addr[1] ? mem_rdata[31:16] : mem_rdata[15:0];
+wire  [7:0] LOAD_byte = loadstore_addr[0] ? LOAD_halfword[15:8] : LOAD_halfword[7:0];
+
+wire mem_byteAccess     = instr[13:12] == 2'b00; // funct3[1:0] == 2'b00;
+wire mem_halfwordAccess = instr[13:12] == 2'b01; // funct3[1:0] == 2'b01;
+
+wire LOAD_sign = !instr[14] & (mem_byteAccess ? LOAD_byte[7] : LOAD_halfword[15]);
+
+   wire [31:0] LOAD_data =
+         mem_byteAccess ? {{24{LOAD_sign}},     LOAD_byte} :
+     mem_halfwordAccess ? {{16{LOAD_sign}}, LOAD_halfword} :
+                          mem_rdata ;
+
+   assign mem_wdata[ 7: 0] = rs2[7:0];
+   assign mem_wdata[15: 8] = loadstore_addr[0] ? rs2[7:0]  : rs2[15: 8];
+   assign mem_wdata[23:16] = loadstore_addr[1] ? rs2[7:0]  : rs2[23:16];
+   assign mem_wdata[31:24] = loadstore_addr[0] ? rs2[7:0]  : 
+			     loadstore_addr[1] ? rs2[15:8] : rs2[31:24];
+
+ wire funct3IsShift = funct3Is[1] | funct3Is[5];
+ wire [31:0] aluOut =
+     (funct3Is[0]  ? instr[30] & instr[5] ? aluMinus[31:0] : aluPlus : 32'b0) | 
+     (funct3Is[2]  ? {31'b0, LT}                                     : 32'b0) | 
+     (funct3Is[3]  ? {31'b0, LTU}                                    : 32'b0) | 
+     (funct3Is[4]  ? aluIn1 ^ aluIn2                                 : 32'b0) | 
+     (funct3Is[6]  ? aluIn1 | aluIn2                                 : 32'b0) | 
+     (funct3Is[7]  ? aluIn1 & aluIn2                                 : 32'b0) | 
+     (funct3IsShift ? aluReg                                         : 32'b0) ; 
+
+
+wire [ADDR_WIDTH-1:0] PCplusImm = PC + ( instr[3] ? Jimm[ADDR_WIDTH-1:0] : 
+					    instr[4] ? Uimm[ADDR_WIDTH-1:0] : 
+					               Bimm[ADDR_WIDTH-1:0] );
+
+   wire [ADDR_WIDTH-1:0] PCplus4 = PC + 4;
+wire writeBack = ~(isBranch | isStore ) & 
+	            (state[EXECUTE_bit] | state[WAIT_ALU_OR_MEM_bit]);
+
+   wire [31:0] writeBackData  =
+      /* verilator lint_off WIDTH */	       	       
+      (isSYSTEM            ? cycles               : 32'b0) |  // SYSTEM
+      /* verilator lint_on WIDTH */	       	       	       
+      (isLUI               ? Uimm                 : 32'b0) |  // LUI
+      (isALU               ? aluOut               : 32'b0) |  // ALUreg, ALUimm
+      (isAUIPC             ? {ADDR_PAD,PCplusImm} : 32'b0) |  // AUIPC
+      (isJALR   | isJAL    ? {ADDR_PAD,PCplus4  } : 32'b0) |  // JAL, JALR
+      (isLoad              ? LOAD_data            : 32'b0);   // Load
+ 
+   always @(posedge clk) begin
+     if (writeBack)
+       if (rdId != 0)
+         registerFile[rdId] <= writeBackData;
+   end
+
+   always @(posedge clk) begin
+      if(aluWr) begin
+         if (funct3IsShift) begin  // SLL, SRA, SRL
+	    aluReg <= aluIn1; 
+	    aluShamt <= aluIn2[4:0]; 
+	 end 
+      end 
+
+`ifdef NRV_TWOLEVEL_SHIFTER
+      else if(|aluShamt[3:2]) begin // Shift by 4
+         aluShamt <= aluShamt - 4;
+	 aluReg <= funct3Is[1] ? aluReg << 4 : 
+		   {{4{instr[30] & aluReg[31]}}, aluReg[31:4]};	    
+      end  else
+`endif
+
+      if (|aluShamt) begin
+         aluShamt <= aluShamt - 1;
+	 aluReg <= funct3Is[1] ? aluReg << 1 :              // SLL
+		   {instr[30] & aluReg[31], aluReg[31:1]};  // SRA,SRL
+      end
+   end
+
+   wire predicate =
+        funct3Is[0] &  EQ  | // BEQ
+        funct3Is[1] & !EQ  | // BNE
+        funct3Is[4] &  LT  | // BLT
+        funct3Is[5] & !LT  | // BGE
+        funct3Is[6] &  LTU | // BLTU
+        funct3Is[7] & !LTU ; // BGEU
+
+   wire [3:0] STORE_wmask =
+	      mem_byteAccess      ? 
+	            (loadstore_addr[1] ? 
+		          (loadstore_addr[0] ? 4'b1000 : 4'b0100) :
+		          (loadstore_addr[0] ? 4'b0010 : 4'b0001) 
+                    ) :
+	      mem_halfwordAccess ? 
+	            (loadstore_addr[1] ? 4'b1100 : 4'b0011) :
+              4'b1111;
+
+
+   // The memory-read signal.
+   assign mem_rstrb = state[EXECUTE_bit] & isLoad | state[FETCH_INSTR_bit];
+
+   // The mask for memory-write.
+   assign mem_wmask = {4{state[EXECUTE_bit] & isStore}} & STORE_wmask;
+
+   // aluWr starts computation (shifts) in the ALU.
+   assign aluWr = state[EXECUTE_bit] & isALU;
+
+   wire jumpToPCplusImm = isJAL | (isBranch & predicate);
+`ifdef NRV_IS_IO_ADDR  
+   wire needToWait = isLoad | 
+		     isStore  & `NRV_IS_IO_ADDR(mem_addr) | 
+		     isALU & funct3IsShift;
+`else
+   wire needToWait = isLoad | isStore | isALU & funct3IsShift;   
+`endif
+   
+   always @(posedge clk) begin
+      if(!reset) begin
+         state      <= WAIT_ALU_OR_MEM; // Just waiting for !mem_wbusy
+         PC         <= RESET_ADDR[ADDR_WIDTH-1:0];
+      end else
+
+      // See note [1] at the end of this file.
+      (* parallel_case *)
+      case(1'b1)
+
+        state[WAIT_INSTR_bit]: begin
+           if(!mem_rbusy) begin // may be high when executing from SPI flash
+              rs1 <= registerFile[mem_rdata[19:15]];
+              rs2 <= registerFile[mem_rdata[24:20]];
+              instr <= mem_rdata[31:2]; // Bits 0 and 1 are ignored (see
+              state <= EXECUTE;         // also the declaration of instr).
+           end
+        end
+
+        state[EXECUTE_bit]: begin
+           PC <= isJALR          ? {aluPlus[ADDR_WIDTH-1:1],1'b0} :
+                 jumpToPCplusImm ? PCplusImm :
+                 PCplus4;
+	   state <= needToWait ? WAIT_ALU_OR_MEM : FETCH_INSTR;
+        end
+
+        state[WAIT_ALU_OR_MEM_bit]: begin
+           if(!aluBusy & !mem_rbusy & !mem_wbusy) state <= FETCH_INSTR;
+        end
+
+        default: begin // FETCH_INSTR
+          state <= WAIT_INSTR;
+        end
+	
+      endcase
+   end
+
+   always @(posedge clk) cycles <= cycles + 1;
+
+`ifdef BENCH
+   initial begin
+      cycles = 0;
+      aluShamt = 0;
+      registerFile[0] = 0;
+   end
+`endif
+
+endmodule
+
+/*****************************************************************************/
+/*****************************************************************************/
+
+
+/***********************************************************************************************/
+                        // ICE-SUGAR-NANO-CONFIG
+/**********************************************************************************************/
+
+`define NRV_IO_UART          // Mapped IO, virtual UART (USB)
+`define NRV_MAPPED_SPI_FLASH // SPI flash mapped in address space. Use with MINIRV32 to run code from SPI flash.
+
+`define NRV_FREQ 12                 // Validating on icesugar-nano
+`ifndef TEST_
+`define NRV_RESET_ADDR 32'h00820000 // Jump execution to SPI Flash (800000h, +128k(20000h) for FPGA bitstream)
+`endif
+`define NRV_COUNTER_WIDTH 24        // Number of bits in cycles counter
+`define NRV_TWOLEVEL_SHIFTER        // Faster shifts
+
+`define NRV_RAM 6144 // default for iCESugar-nano (cannot do more !)
+
+/************************* Advanced devices configuration ***********************************************************/
+
+`ifndef TEST_
+`define NRV_RUN_FROM_SPI_FLASH // Do not 'readmemh()' firmware from '.hex' file
+`endif
+`define NRV_IO_HARDWARE_CONFIG // Comment-out to disable hardware config registers mapped in IO-Space
+                               // (note: firmware libfemtorv32 depends on it)
+
+`define NRV_CONFIGURED
+
+`define RV_DEBUG_ICESUGAR_NANO  // so far, it blinks the onboard yellow LED (v1.2 of icesugar nano hw)
+
+/********************************************************************************************************************/
+/********************************************************************************************************************/
+
+/**********************************************************************************************************/
+                                    //FEMTOSOC-CONFIG
+/**********************************************************************************************************/
+`ifdef NRV_MAPPED_SPI_FLASH
+`define NRV_SPI_FLASH
+`endif
+`define ICE40
+// `define PASSTHROUGH_PLL
+
+`define NRV_IS_IO_ADDR(addr) |addr[23:22] // Asserted if address is in IO space (then it needs additional wait states)
+
+/********************************************************************************************************************/
+/********************************************************************************************************************/
+
+/**********************************************************************************************************/
+                           // PLL
+/**********************************************************************************************************/
+module femtoPLL #(
+ parameter freq = 60
+) (
+ input 	pclk,
+ output clk	   
+);
+   assign clk = pclk;   
+endmodule
+/**********************************************************************************************************/
+/**********************************************************************************************************/
+
+/**********************************************************************************************************/
+                     // UART
+/**********************************************************************************************************/
+`include "uart.v"           // The UART (serial port over USB)
+
+`include "MappedSPIFlash.v" // Idem, but mapped in memory
+`include "HardwareConfig.v" // Constant registers to query hardware config.
+
+/*************************************************************************************/
+
+`ifndef NRV_RESET_ADDR
+ `define NRV_RESET_ADDR 0
+`endif
+
+`ifndef NRV_ADDR_WIDTH
+ `define NRV_ADDR_WIDTH 24
+`endif
+
+/*************************************************************************************/
+
+`ifdef RV_DEBUG_ICESUGAR_NANO
+module led_blink(  
+                input  clk,
+                output led
+                );
+   reg [25:0] 			  counter;
+   assign led = ~counter[19];
+
+   initial begin
+      counter = 0;
+   end
+
+   always @(posedge clk)
+     begin
+        counter <= counter + 1;
+     end
+endmodule
+`endif //  `ifdef RV_DEBUG_ICESUGAR_NANO
+
+
+/*************************************************************************************/
+
+module femtosoc(
+`ifdef NRV_IO_UART
+					 input  RXD,
+					 output TXD,
+`endif	      
+
+`ifdef NRV_SPI_FLASH
+					 inout spi_mosi, inout spi_miso, output spi_cs_n,
+ `ifndef ULX3S	
+					 output spi_clk, // ULX3S has spi clk shared with ESP32, using USRMCLK (below)	
+ `endif
+`endif
+
+`ifdef ULX3S
+					 output wifi_en,		
+`endif		
+   input  RESET,
+
+`ifdef RV_DEBUG_ICESUGAR_NANO
+					 output board_led,
+`endif
+					 input pclk
+);
+
+	
+/********************* Technicalities **************************************/
+   
+// On the ULX3S, deactivate the ESP32 so that it does not interfere with 
+// the other devices (especially the SDCard).
+`ifdef ULX3S
+   assign wifi_en = 1'b0;
+`endif		
+
+// On the ULX3S, the CLK pin of the SPI is multiplexed with the ESP32.
+// It can be accessed using the USRMCLK primitive of the ECP5
+// as follows.
+`ifdef NRV_SPI_FLASH
+ `ifdef ULX3S
+   wire   spi_clk;
+   wire   tristate = 1'b0;
+   `ifndef BENCH   
+      USRMCLK u1 (.USRMCLKI(spi_clk), .USRMCLKTS(tristate));
+   `endif
+  `endif
+`endif
+
+  wire  clk;
+   
+  femtoPLL #(
+    .freq(`NRV_FREQ)	     
+  ) pll(
+    .pclk(pclk), 
+    .clk(clk)
+  );
+
+  // A little delay for sending the reset signal after startup.
+  // Explanation here: (ice40 BRAM reads incorrect values during
+  // first cycles).
+  // http://svn.clifford.at/handicraft/2017/ice40bramdelay/README
+  // On the ICE40-UP5K, 4096 cycles do not suffice (-> 65536 cycles)
+`ifdef ICE_STICK
+  reg [11:0] reset_cnt = 0;   
+`else   
+  reg [15:0] reset_cnt = 0;
+`endif 
+`ifndef TEST_  
+  wire       reset = &reset_cnt;
+`else
+   wire       reset = RESET;
+`endif
+
+/* verilator lint_off WIDTH */   
+`ifdef NRV_NEGATIVE_RESET
+   always @(posedge clk,negedge RESET) begin
+      if(!RESET) begin
+	 reset_cnt <= 0;
+      end else begin
+	 reset_cnt <= reset_cnt + !reset;
+      end
+   end
+`else
+   always @(posedge clk,posedge RESET) begin
+      if(RESET) begin
+	 reset_cnt <= 0;
+      end else begin
+	 reset_cnt <= reset_cnt + !reset;
+      end
+   end
+`endif
+/* verilator lint_on WIDTH */   
+   
+/***************************************************************************************************
+/*
+ * Memory and memory interface
+ * memory map:
+ *   address[21:2] RAM word address (4 Mb max).
+ *   address[23:22]   00: RAM
+ *                    01: IO page (1-hot)  (starts at 0x400000)
+ *                    10: SPI Flash page   (starts at 0x800000)
+ */ 
+
+   // The memory bus.
+   wire [31:0] mem_address; // 24 bits are used internally. The two LSBs are ignored (using word addresses)
+   wire  [3:0] mem_wmask;   // mem write mask and strobe /write Legal values are 000,0001,0010,0100,1000,0011,1100,1111
+   wire [31:0] mem_rdata;   // processor <- (mem and peripherals) 
+   wire [31:0] mem_wdata;   // processor -> (mem and peripherals)
+   wire        mem_rstrb;   // mem read strobe. Goes high to initiate memory write.
+   wire        mem_rbusy;   // processor <- (mem and peripherals). Stays high until a read transfer is finished.
+   wire        mem_wbusy;   // processor <- (mem and peripherals). Stays high until a write transfer is finished.
+
+   wire        mem_wstrb = |mem_wmask; // mem write strobe, goes high to initiate memory write (deduced from wmask)
+
+   // IO bus.
+`ifdef NRV_MAPPED_SPI_FLASH
+   wire mem_address_is_ram       = (mem_address[23:22] == 2'b00);   
+   wire mem_address_is_io        = (mem_address[23:22] == 2'b01);
+   wire mem_address_is_spi_flash = (mem_address[23:22] == 2'b10);
+   wire mapped_spi_flash_rbusy;
+   wire [31:0] mapped_spi_flash_rdata;
+   
+   MappedSPIFlash mapped_spi_flash(
+      .clk(clk),
+      .rstrb(mem_rstrb && mem_address_is_spi_flash),
+      .word_address(mem_address[21:2]),
+      .rdata(mapped_spi_flash_rdata),
+      .rbusy(mapped_spi_flash_rbusy),
+      .CLK(spi_clk),
+      .CS_N(spi_cs_n),
+`ifdef SPI_FLASH_FAST_READ_DUAL_IO				   
+      .IO({spi_miso,spi_mosi})
+`else	
+      .MISO(spi_miso),
+      .MOSI(spi_mosi)
+`endif				   
+   );
+`else   
+   wire mem_address_is_io  =  mem_address[22];
+   wire mem_address_is_ram = !mem_address[22];
+`endif
+      
+   reg  [31:0] io_rdata; 
+   wire [31:0] io_wdata = mem_wdata;
+   wire        io_rstrb = mem_rstrb && mem_address_is_io;
+   wire        io_wstrb = mem_wstrb && mem_address_is_io;
+   wire [19:0] io_word_address = mem_address[21:2]; // word offset in io page
+   wire	       io_rbusy; 
+   wire        io_wbusy;
+   
+   assign      mem_rbusy = io_rbusy
+`ifdef NRV_MAPPED_SPI_FLASH
+    | mapped_spi_flash_rbusy			   
+`endif 			   
+    ;
+   
+   assign      mem_wbusy = io_wbusy; 
+
+`ifdef NRV_IO_FGA
+   wire mem_address_is_vram = mem_address[21];
+`else
+   parameter mem_address_is_vram = 1'b0;
+`endif
+
+   wire [19:0] ram_word_address = mem_address[21:2];
+
+// Using the 128 KBytes of SPRAM (single-ported RAM) embedded in the Ice40 UP5K   
+`ifdef ICE40UP5K_SPRAM
+
+   wire [31:0]  ram_rdata;
+   wire 	spram_wr = mem_address_is_ram && !mem_address_is_vram;
+   ice40up5k_spram RAM(
+      .clk(clk),
+      .wen({4{spram_wr}} & mem_wmask),
+      .addr(ram_word_address[14:0]),
+      .wdata(mem_wdata),
+      .rdata(ram_rdata)		       
+   );
+
+`else // Synthethizing BRAM
+   
+   reg [31:0] RAM[0:(`NRV_RAM/4)-1];
+   reg [31:0] ram_rdata;
+
+   // Initialize the RAM with the generated firmware hex file.
+   // The hex file is generated by the bundled elf-2-verilog converter (see TOOLS/FIRMWARE_WORDS_SRC)
+`ifndef NRV_RUN_FROM_SPI_FLASH  
+   initial begin
+      $readmemh("add.hex",RAM); 
+   end
+`endif
+
+   // The power of YOSYS: it infers BRAM primitives automatically ! (and recognizes
+   // masked writes, amazing ...)
+   /* verilator lint_off WIDTH */
+   always @(posedge clk) begin
+      if(mem_address_is_ram && !mem_address_is_vram) begin
+	 if(mem_wmask[0]) RAM[ram_word_address][ 7:0 ] <= mem_wdata[ 7:0 ];
+	 if(mem_wmask[1]) RAM[ram_word_address][15:8 ] <= mem_wdata[15:8 ];
+	 if(mem_wmask[2]) RAM[ram_word_address][23:16] <= mem_wdata[23:16];
+	 if(mem_wmask[3]) RAM[ram_word_address][31:24] <= mem_wdata[31:24];	 
+      end 
+      ram_rdata <= RAM[ram_word_address];
+   end
+   /* verilator lint_on WIDTH */
+`endif
+      
+`ifdef NRV_MAPPED_SPI_FLASH
+   assign mem_rdata = mem_address_is_io  ? io_rdata  : 
+		      mem_address_is_ram ? ram_rdata : 
+		      mapped_spi_flash_rdata;   
+`else   
+   assign mem_rdata = mem_address_is_io ? io_rdata : ram_rdata;
+`endif   
+   
+/***************************************************************************************************
+/*
+ * Memory-mapped IO
+ * Mapped IO uses "one-hot" addressing, to make decoder
+ * simpler (saves a lot of LUTs), as in J1/swapforth,
+ * thanks to Matthias Koch(Mecrisp author) for the idea !
+ * The included files contains the symbolic constants that
+ * determine which device uses which bit.
+ */  
+
+`include "HardwareConfig_bits.v"   
+
+/*
+ * Devices are components plugged to the IO memory bus.
+ * A few words follow in case you want to write your own devices:
+ *
+ * Each device has one or several register(s). Each register 
+ * can be optionally read or/and written.
+ * - Each register is selected by a .sel_xxx signal (where xxx
+ *   is the name of the register). With the 1-hot encoding that 
+ *   I'm using, .sel_xxx is systematically one of the bits of the 
+ *   IO word address (it is also possible to write a real
+ *   address decoder, at the expense of eating-up a larger 
+ *   number of LUTs).
+ * - If the device requires wait cycles for writing and/or reading, 
+ *   it can have a .wbusy and/or .rbusy signal(s). All the .wbusy
+ *   and .rbusy signals of all the devices are ORed at the end of
+ *   this file to form the .io_rbusy and .io_wbusy signals.
+ * - If the device has read access, then it has a 32-bits .xxx_rdata
+ *   signal, that returns 32'b0 if the device is not selected, or the
+ *   read data otherwise. All the .xxx_rdata signals of all the devices
+ *   are ORed at the end of this file to form the 32-bits io_rdata signal.
+ * - Finally, of course, each device is plugged to some pins of the FPGA,
+ *   the corresponding signals are in capital letters. 
+ */   
+
+
+/*********************** Hardware configuration ************/
+/*
+ * Three memory-mapped constant registers that make it easy for
+ * client code to query installed RAM and configured devices
+ * (this one does not use any pin, of course).
+ * Uses some LUTs, a bit stupid, but more comfortable, so that
+ * I do not need to change the software on the SDCard each time 
+ * I test a different hardware configuration.
+ */
+`ifdef NRV_IO_HARDWARE_CONFIG   
+wire [31:0] hwconfig_rdata;
+HardwareConfig hwconfig(
+   .clk(clk),			
+   .sel_memory(io_word_address[IO_HW_CONFIG_RAM_bit]),
+   .sel_devices(io_word_address[IO_HW_CONFIG_DEVICES_bit]),
+   .sel_cpuinfo(io_word_address[IO_HW_CONFIG_CPUINFO_bit]),			
+   .rdata(hwconfig_rdata)			 
+);
+`endif
+   
+/*********************** Four LEDs ************************/
+
+
+/********************** SSD1351/SSD1331 oled display ******/
+ 
+
+/********************** UART ****************************************/
+`ifdef NRV_IO_UART
+
+ // Internal wires to connect IO buffers to UART
+ wire RXD_internal;
+ wire TXD_internal;
+   
+ `ifdef ULX3S
+   `ifndef BENCH_OR_LINT
+     // On the ULX3S, we need to latch RXD, using the latch
+     // embedded in the input buffer. If we do not do that,
+     // then we unpredictably get garbage on the UART.
+     // The two primitives BB (bidirectional three-state buffer)
+     // and IFS1P3BX (latch in IO pin) are interpreted by the
+     // synthesis tool as an IO cell.
+     wire RXD_btw;
+     BB RXD_bb(
+       .I(1'b0), 
+       .O(RXD_btw), 
+       .B(RXD), 
+       .T(1'b1)
+     );
+     IFS1P3BX RXD_pin(
+       .SCLK(clk),		    
+       .D(RXD_btw),
+       .Q(RXD_internal),
+       .PD(1'b0)		    
+     );
+     assign TXD = TXD_internal; // For now, do not latch output (but we may need to)
+     `define UART_IO_BUFFER
+   `endif
+ `endif
+ 
+ // For other boards, we directly connect RXD and TXD to the UART (but we may need
+ // to latch).
+ `ifndef UART_IO_BUFFER
+   assign RXD_internal = RXD;
+   assign TXD = TXD_internal;
+ `endif
+
+   wire        uart_brk;
+   wire [31:0] uart_rdata;
+   UART uart(
+      .clk(clk),
+      .rstrb(io_rstrb),	     	     
+      .wstrb(io_wstrb),
+      .sel_dat(io_word_address[IO_UART_DAT_bit]),
+      .sel_cntl(io_word_address[IO_UART_CNTL_bit]),	     
+      .wdata(io_wdata),
+      .rdata(uart_rdata),
+      .RXD(RXD_internal),
+      .TXD(TXD_internal),
+      .brk(uart_brk)
+   );
+`else
+   wire uart_brk = 1'b0;
+`endif 
+   
+/************** io_rdata, io_rbusy and io_wbusy signals *************/
+
+/*
+ * io_rdata is latched. Not mandatory, but probably allow higher freq, to be tested.
+ */
+always @(posedge clk) begin
+   io_rdata <= 0
+`ifdef NRV_IO_HARDWARE_CONFIG	       
+            | hwconfig_rdata
+`endif	       
+`ifdef NRV_IO_LEDS      
+	    | leds_rdata
+`endif
+`ifdef NRV_IO_UART
+	    | uart_rdata
+`endif	    
+`ifdef NRV_IO_SDCARD
+	    | sdcard_rdata
+`endif
+`ifdef NRV_IO_BUTTONS
+	    | buttons_rdata
+`endif
+`ifdef NRV_IO_FGA
+	    | FGA_rdata
+`endif
+	    ;
+end
+
+   // For now, we got no device that has
+   // blocking reads (SPI flash blocks on
+   // write address and waits for read data).
+   assign io_rbusy = 0 ; 
+
+   assign io_wbusy = 0
+`ifdef NRV_IO_SSD1351_1331
+	| SSD1351_wbusy
+`endif
+`ifdef NRV_IO_MAX7219
+	| max7219_wbusy
+`endif		   
+`ifdef NRV_IO_SPI_FLASH
+        | spi_flash_wbusy
+`endif		   
+; 
+
+/****************************************************************/
+/* And last but not least, the processor                        */
+   
+  reg error=1'b0;
+
+   
+  FemtoRV32 #(
+     .ADDR_WIDTH(`NRV_ADDR_WIDTH),
+     .RESET_ADDR(`NRV_RESET_ADDR)	      
+  ) processor(
+    .clk(clk),			
+    .mem_addr(mem_address),
+    .mem_wdata(mem_wdata),
+    .mem_wmask(mem_wmask),
+    .mem_rdata(mem_rdata),
+    .mem_rstrb(mem_rstrb),
+    .mem_rbusy(mem_rbusy),
+    .mem_wbusy(mem_wbusy),
+`ifdef NRV_INTERRUPTS
+    .interrupt_request(1'b0),	      
+`endif     
+    .reset(reset && !uart_brk)
+  );
+
+	/* ****************************** RV DEBUG iCESugar-nano ****************************** */
+	/* for debugging purposes */
+`ifdef RV_DEBUG_ICESUGAR_NANO
+	led_blink 
+	  my_debug_led(
+                  .clk(pclk),     // clock signal
+                  .led(board_led) // yellow led in the icesugar-nano board v1.2
+                  );
+`endif
+	/* ************************************************************************************* */
+	
+endmodule
