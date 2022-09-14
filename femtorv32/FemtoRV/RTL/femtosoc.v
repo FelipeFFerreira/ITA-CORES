@@ -1,14 +1,8 @@
 
-// SIMU
-// `define TEST_
-
 /*****************************************************************************/
             // QUARK_NUCLEO
 /*****************************************************************************/
 
-`ifdef TEST_
-   `define BENCH
-`endif
 
 module FemtoRV32(
    input 	     clk,
@@ -314,9 +308,7 @@ endmodule
 `define NRV_MAPPED_SPI_FLASH // SPI flash mapped in address space. Use with MINIRV32 to run code from SPI flash.
 
 `define NRV_FREQ 12                 // Validating on icesugar-nano
-`ifndef TEST_
 `define NRV_RESET_ADDR 32'h00820000 // Jump execution to SPI Flash (800000h, +128k(20000h) for FPGA bitstream)
-`endif
 `define NRV_COUNTER_WIDTH 24        // Number of bits in cycles counter
 `define NRV_TWOLEVEL_SHIFTER        // Faster shifts
 
@@ -324,9 +316,7 @@ endmodule
 
 /************************* Advanced devices configuration ***********************************************************/
 
-`ifndef TEST_
 `define NRV_RUN_FROM_SPI_FLASH // Do not 'readmemh()' firmware from '.hex' file
-`endif
 `define NRV_IO_HARDWARE_CONFIG // Comment-out to disable hardware config registers mapped in IO-Space
                                // (note: firmware libfemtorv32 depends on it)
 
@@ -512,7 +502,7 @@ module buart #(
     reg [divwidth:0] send_divcnt;
     wire send_baud_clk  = send_divcnt[divwidth];
 
-    reg [9:0] send_pattern = 1;
+    reg [9:0] send_pattern;
     assign tx = send_pattern[0];
     assign busy = |send_pattern[9:1];
 
@@ -609,7 +599,7 @@ module MappedSPIFlash(
    assign     rbusy = !CS_N; 
    
    assign  MOSI  = cmd_addr[31];
-   initial CS_N  = 1'b1;
+   // initial CS_N  = 1'b1;
    assign  CLK   = !CS_N && !clk; // CLK needs to be inverted (sample on posedge, shift of negedge) 
                                   // and needs to be disabled when not sending/receiving (&& !CS_N).
 
@@ -734,16 +724,11 @@ module femtosoc(
   // first cycles).
   // http://svn.clifford.at/handicraft/2017/ice40bramdelay/README
   // On the ICE40-UP5K, 4096 cycles do not suffice (-> 65536 cycles)
-`ifdef ICE_STICK
-  reg [11:0] reset_cnt = 0;   
-`else   
-  reg [15:0] reset_cnt = 0;
-`endif 
-`ifndef TEST_  
-  wire       reset = &reset_cnt;
-`else
-   wire       reset = RESET;
-`endif
+   
+reg [15:0] reset_cnt;
+ 
+wire       reset = &reset_cnt;
+
 
 /* verilator lint_off WIDTH */   
 `ifdef NRV_NEGATIVE_RESET
@@ -1056,8 +1041,6 @@ end
 /****************************************************************/
 /* And last but not least, the processor                        */
    
-  reg error=1'b0;
-
    
   FemtoRV32 #(
      .ADDR_WIDTH(`NRV_ADDR_WIDTH),
