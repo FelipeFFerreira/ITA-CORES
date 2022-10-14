@@ -3,6 +3,7 @@
             // QUARK_NUCLEO
 /*****************************************************************************/
 
+// `define ASIC
 
 module FemtoRV32(
    input 	     clk,
@@ -15,7 +16,8 @@ module FemtoRV32(
    input 	     mem_rbusy, // asserted if memory is busy reading value
    input 	     mem_wbusy, // asserted if memory is busy writing value
 
-   input 	     reset      // set to 0 to reset the processor
+   input 	     reset,      // set to 0 to reset the processor
+   input         RXD
 );
 
 
@@ -182,13 +184,15 @@ wire writeBack = ~(isBranch | isStore ) &
       (isLoad              ? LOAD_data            : 32'b0);   // Load
  
    always @(posedge clk) begin
-     if (writeBack)
+     if (!reset) registerFile[0] <= 32'h00000000;
+     else if (writeBack)
        if (rdId != 0)
          registerFile[rdId] <= writeBackData;
    end
 
    always @(posedge clk) begin
-      if(aluWr) begin
+      if (!reset) aluShamt <= 4'b0000; 
+      else if(aluWr) begin
          if (funct3IsShift) begin  // SLL, SRA, SRL
 	    aluReg <= aluIn1; 
 	    aluShamt <= aluIn2[4:0]; 
@@ -250,7 +254,7 @@ wire writeBack = ~(isBranch | isStore ) &
    always @(posedge clk) begin
       if(!reset) begin
          state      <= WAIT_ALU_OR_MEM; // Just waiting for !mem_wbusy
-         PC         <= RESET_ADDR[ADDR_WIDTH-1:0];
+         PC         <= (RXD == 0) ? 32'h00000000 : RESET_ADDR[ADDR_WIDTH-1:0];
       end else
 
       // See note [1] at the end of this file.
@@ -284,7 +288,14 @@ wire writeBack = ~(isBranch | isStore ) &
       endcase
    end
 
-   always @(posedge clk) cycles <= cycles + 1;
+   
+
+   always @(posedge clk) begin
+      if (!reset) begin 
+         cycles <= 0;
+      end
+      else cycles <= cycles + 1;
+   end
 
 `ifdef BENCH
    initial begin
@@ -576,6 +587,7 @@ endmodule
 `ifdef SPI_FLASH_READ
 module MappedSPIFlash( 
     input wire 	       clk,          // system clock
+    input wire reset,
     input wire 	       rstrb,        // read strobe		
     input wire [19:0]  word_address, // address of the word to be read
 
@@ -607,7 +619,8 @@ module MappedSPIFlash(
    assign rdata = {rcv_data[7:0],rcv_data[15:8],rcv_data[23:16],rcv_data[31:24]};
    
    always @(posedge clk) begin
-      if(rstrb) begin
+      if (!reset) CS_N <= 1'b1;
+      else if(rstrb) begin
 	 CS_N <= 1'b0;
 	 cmd_addr <= {8'h03, 2'b00,word_address[19:0], 2'b00};
 	 snd_bitcount <= 6'd32;
@@ -645,18 +658,16 @@ endmodule
 `ifdef RV_DEBUG_ICESUGAR_NANO
 module led_blink(  
                 input  clk,
+                input reset,
                 output led
                 );
    reg [25:0] 			  counter;
    assign led = ~counter[19];
 
-   initial begin
-      counter = 0;
-   end
-
    always @(posedge clk)
      begin
-        counter <= counter + 1;
+      if (!reset) counter <= 0 ;
+        else counter <= counter + 1;
      end
 endmodule
 `endif //  `ifdef RV_DEBUG_ICESUGAR_NANO
@@ -725,6 +736,8 @@ module femtosoc(
   // http://svn.clifford.at/handicraft/2017/ice40bramdelay/README
   // On the ICE40-UP5K, 4096 cycles do not suffice (-> 65536 cycles)
    
+`ifndef ASIC
+
 reg [15:0] reset_cnt;
  
 wire       reset = &reset_cnt;
@@ -747,6 +760,9 @@ wire       reset = &reset_cnt;
 	 reset_cnt <= reset_cnt + !reset;
       end
    end
+`endif
+`else wire  reset;
+assign reset = RESET;
 `endif
 /* verilator lint_on WIDTH */   
    
@@ -781,6 +797,7 @@ wire       reset = &reset_cnt;
    
    MappedSPIFlash mapped_spi_flash(
       .clk(clk),
+      .reset(reset),
       .rstrb(mem_rstrb && mem_address_is_spi_flash),
       .word_address(mem_address[21:2]),
       .rdata(mapped_spi_flash_rdata),
@@ -1057,7 +1074,9 @@ end
 `ifdef NRV_INTERRUPTS
     .interrupt_request(1'b0),	      
 `endif     
-    .reset(reset && !uart_brk)
+    //.reset(reset && !uart_brk) // v1
+    .reset(reset), // v2
+    .RXD(RXD)
   );
 
 	/* ****************************** RV DEBUG iCESugar-nano ****************************** */
@@ -1066,6 +1085,7 @@ end
 	led_blink 
 	  my_debug_led(
                   .clk(pclk),     // clock signal
+                  .reset(reset),
                   .led(board_led) // yellow led in the icesugar-nano board v1.2
                   );
 `endif

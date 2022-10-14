@@ -7,42 +7,41 @@ module testbench;
 `define NRV_RAM 6144 // default for iCESugar-nano (cannot do more !)
 
 	reg 		clk;
-    reg 	    reset;      // set to 0 to reset the processor
-   reg [31:0] RAM[0:(`NRV_RAM/4)-1];
-
-	assign testbench.ITA_CORE.reset = reset;
+    reg 	    reset; // set to 0 to reset the processor
+	reg 		RXD;
+    reg [31:0] 	RAM[0:(`NRV_RAM/4)-1];
 
     femtosoc ITA_CORE(
 		.RESET(reset),
-    	.pclk(clk)
+    	.pclk(clk),
+		.RXD(RXD)
 	);
 
 	initial begin
     	$readmemh("riscvtest.hex", testbench.ITA_CORE.RAM); 
-		testbench.ITA_CORE.processor.cycles = 0;
-      	testbench.ITA_CORE.processor.aluShamt = 0;
-      	testbench.ITA_CORE.processor.registerFile[0] = 0;
-		testbench.ITA_CORE.mapped_spi_flash.CS_N = 1'b1;
-		testbench.ITA_CORE.reset_cnt = 0;
-   
 	end
-	
+
 	initial begin
 		reset = 0;
 		clk <= 0;
-		 // RESET
-			#20;
-            reset = 1'b1;
-			testbench.ITA_CORE.processor.PC = 0;
-		
+		RXD <= 0;
+		#20;
+        reset = 1'b1;
+
+		#250;
+
+		reset = 0;
+		clk <= 0;
+		RXD <= 1;
+		#20;
+        reset = 1'b1;
 	end
 
-	 always
-    begin
+	always begin
         #10 clk = !clk;
     end
     
-	always @(negedge clk) begin
+	// always @(posedge clk) begin
 // `ifdef BASE_BOOK_TEST
 // 		if (isStore)
 // 			if ((mem_ADDR === 100) & (mem_WDATA === 25)) begin
@@ -60,9 +59,7 @@ module testbench;
 // 		// instr_ax = {instr, 2'b11};
 //     	// $display("%h", instr_ax); 
 // `endif
-	end
-
-
+	// end
 	initial
         #94000 $finish;
 
