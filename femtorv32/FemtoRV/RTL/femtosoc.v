@@ -3,7 +3,7 @@
             // QUARK_NUCLEO
 /*****************************************************************************/
 
-// `define ASIC
+ `define ASIC
 
 module FemtoRV32(
    input 	     clk,
@@ -17,7 +17,7 @@ module FemtoRV32(
    input 	     mem_wbusy, // asserted if memory is busy writing value
 
    input 	     reset,      // set to 0 to reset the processor
-   input         RXD
+   input         debug_pin
 );
 
 
@@ -184,20 +184,30 @@ wire writeBack = ~(isBranch | isStore ) &
       (isLoad              ? LOAD_data            : 32'b0);   // Load
  
    always @(posedge clk) begin
-     if (!reset) registerFile[0] <= 32'h00000000;
+     if (!reset) begin 
+         registerFile[0] <= 32'h00000000;
+     end
      else if (writeBack)
        if (rdId != 0)
          registerFile[rdId] <= writeBackData;
    end
 
-   always @(posedge clk) begin
-      if (!reset) aluShamt <= 4'b0000; 
-      else if(aluWr) begin
+ always @(posedge clk) begin
+      if(aluWr) begin
          if (funct3IsShift) begin  // SLL, SRA, SRL
-	    aluReg <= aluIn1; 
-	    aluShamt <= aluIn2[4:0]; 
-	 end 
-      end 
+	    aluReg <= aluIn1;
+	    aluShamt <= aluIn2[4:0];
+	 end
+      end //TODO
+   // always @(posedge clk) begin
+   //    if (!debug_pin) ;//aluShamt <= 0; 
+	// else begin if (!reset) aluShamt <= 0; 
+   //    		else if(aluWr) begin
+   //       		if (funct3IsShift) begin  // SLL, SRA, SRL
+	//     			aluReg <= aluIn1; 
+	//     			aluShamt <= aluIn2[4:0]; 
+	//  		end 
+   //    		      end 
 
 `ifdef NRV_TWOLEVEL_SHIFTER
       else if(|aluShamt[3:2]) begin // Shift by 4
@@ -254,7 +264,7 @@ wire writeBack = ~(isBranch | isStore ) &
    always @(posedge clk) begin
       if(!reset) begin
          state      <= WAIT_ALU_OR_MEM; // Just waiting for !mem_wbusy
-         PC         <= (RXD == 0) ? 32'h00000000 : RESET_ADDR[ADDR_WIDTH-1:0];
+         PC         <= (debug_pin == 1) ? 32'h00000000 : RESET_ADDR[ADDR_WIDTH-1:0];
       end else
 
       // See note [1] at the end of this file.
@@ -297,7 +307,7 @@ wire writeBack = ~(isBranch | isStore ) &
       else cycles <= cycles + 1;
    end
 
-`ifdef BENCH
+`ifndef BENCH
    initial begin
       cycles = 0;
       aluShamt = 0;
@@ -323,7 +333,7 @@ endmodule
 `define NRV_COUNTER_WIDTH 24        // Number of bits in cycles counter
 `define NRV_TWOLEVEL_SHIFTER        // Faster shifts
 
-`define NRV_RAM 6144 // default for iCESugar-nano (cannot do more !)
+`define NRV_RAM 4096 // default for iCESugar-nano (cannot do more !)
 
 /************************* Advanced devices configuration ***********************************************************/
 
@@ -333,7 +343,7 @@ endmodule
 
 `define NRV_CONFIGURED
 
-`define RV_DEBUG_ICESUGAR_NANO  // so far, it blinks the onboard yellow LED (v1.2 of icesugar nano hw)
+//`define RV_DEBUG_ICESUGAR_NANO  // so far, it blinks the onboard yellow LED (v1.2 of icesugar nano hw)
 
 /********************************************************************************************************************/
 /********************************************************************************************************************/
@@ -353,16 +363,7 @@ endmodule
 /********************************************************************************************************************/
 
 /**********************************************************************************************************/
-                           // PLL
-/**********************************************************************************************************/
-module femtoPLL #(
- parameter freq = 60
-) (
- input 	pclk,
- output clk	   
-);
-   assign clk = pclk;   
-endmodule
+
 /**********************************************************************************************************/
 /**********************************************************************************************************/
 
@@ -619,11 +620,11 @@ module MappedSPIFlash(
    assign rdata = {rcv_data[7:0],rcv_data[15:8],rcv_data[23:16],rcv_data[31:24]};
    
    always @(posedge clk) begin
-      if (!reset) CS_N <= 1'b1;
-      else if(rstrb) begin
-	 CS_N <= 1'b0;
-	 cmd_addr <= {8'h03, 2'b00,word_address[19:0], 2'b00};
-	 snd_bitcount <= 6'd32;
+      if (!reset) CS_N <= 1;
+         else if(rstrb) begin
+	            CS_N <= 1'b0;
+	            cmd_addr <= {8'h03, 2'b00,word_address[19:0], 2'b00};
+	            snd_bitcount <= 6'd32;
       end else begin
 	 if(sending) begin
 	    if(snd_bitcount == 1) begin
@@ -696,7 +697,8 @@ module femtosoc(
 `ifdef RV_DEBUG_ICESUGAR_NANO
 					 output board_led,
 `endif
-					 input pclk
+					 input debug_pin,
+					 input clk
 );
 
 	
@@ -721,14 +723,7 @@ module femtosoc(
   `endif
 `endif
 
-  wire  clk;
-   
-  femtoPLL #(
-    .freq(`NRV_FREQ)	     
-  ) pll(
-    .pclk(pclk), 
-    .clk(clk)
-  );
+ 
 
   // A little delay for sending the reset signal after startup.
   // Explanation here: (ice40 BRAM reads incorrect values during
@@ -897,7 +892,7 @@ assign reset = RESET;
  * thanks to Matthias Koch(Mecrisp author) for the idea !
  * The included files contains the symbolic constants that
  * determine which device uses which bit.
- */  
+ */ 
 
 // `include "HardwareConfig_bits.v"   
 
@@ -1076,7 +1071,7 @@ end
 `endif     
     //.reset(reset && !uart_brk) // v1
     .reset(reset), // v2
-    .RXD(RXD)
+    .debug_pin(debug_pin)
   );
 
 	/* ****************************** RV DEBUG iCESugar-nano ****************************** */
