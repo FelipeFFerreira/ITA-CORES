@@ -11,12 +11,17 @@ module flash_spi(inout spi_mosi, inout spi_miso, input SS, input spi_clk);
 	wire [31:0] word_address;
 	wire [31:0] word_data;
 	reg [5:0]  rcv_bitcount;
+	reg [5:0]  snd_bitcount;
+	reg [31:0] cmd_addr;
+
+	assign  spi_miso  = cmd_addr[31];
 
 	wire       receiving = (rcv_bitcount != 0);
-	
+	wire       sending   = (snd_bitcount != 0);
+	reg sds;
 	assign word_address = {{13{1'b0}} ,rcv_data[19:0]};
-	// assign word_data = {{13{1'b0}}, word_address};
-	assign word_data = MEM[word_address];
+	assign word_data = {MEM[word_address][7:0], MEM[word_address][15:8], MEM[word_address][23:16], MEM[word_address][31:24]};
+
 	always @(negedge SS) begin
 		rcv_bitcount <= 6'd32;
 	end
@@ -25,8 +30,20 @@ module flash_spi(inout spi_mosi, inout spi_miso, input SS, input spi_clk);
 		if (receiving) begin
 			rcv_bitcount <= rcv_bitcount - 6'd1;
 			rcv_data <= {rcv_data[30:0], spi_mosi};
+			sds = 0;
+		end
+		else if (rcv_bitcount == 0 && sds == 0) begin
+			cmd_addr <= word_data;
+			snd_bitcount <= 6'd32;
+			sds = 1;
+		end
+		else if (sending) begin
+			snd_bitcount <= snd_bitcount - 6'd1;
+			cmd_addr <= {cmd_addr[30:0],1'b1};
+			//rcv_data <= {word_data[30:0],MISO};
 		end
       end
+
 	end
 	
 	initial begin
@@ -86,7 +103,7 @@ module testbench;
 // `endif
 	// end
 	initial
-        #1000 $finish;
+        #5000 $finish;
 
 	initial begin
 		$dumpfile("testbench.vcd");
