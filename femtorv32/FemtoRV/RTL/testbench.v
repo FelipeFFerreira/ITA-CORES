@@ -5,50 +5,52 @@
 
 module flash_spi(inout spi_mosi, inout spi_miso, input SS, input spi_clk);
 	
-	reg [31:0] 	MEM[32'h00020000*4:0];
-	
-	reg [31:0] rcv_data;
-	wire [31:0] word_address;
-	wire [31:0] word_data;
-	reg [5:0]  rcv_bitcount;
-	reg [5:0]  snd_bitcount;
-	reg [31:0] cmd_addr;
+	reg [31:0]	MEM[0:(`NRV_RAM/4)-1];
+	reg [31:0]	rcv_data_dut;
+	wire [31:0] word_data_dut;
+	reg [5:0]	rcv_bitcount_dut;
+	reg [5:0]	snd_bitcount_dut;
+	reg [31:0]	cmd_addr_dut;
+	reg 		sds;
+	wire       	receiving_dut = (rcv_bitcount_dut != 0);
+	wire       	sending_dut   = (snd_bitcount_dut != 0);
+	assign  	spi_miso  = cmd_addr_dut[31];
+   	wire [32 - 1:0] addr_dut;
+   	assign addr_dut = {rcv_data_dut[19:0]};
+   	wire [31:0] mem2;
+   	assign mem2 =  (receiving_dut != 0) ? 32'hzzzz : 
+   					{ MEM[addr_dut[9 - 1:2]] };
 
-	assign  spi_miso  = cmd_addr[31];
-
-	wire       receiving = (rcv_bitcount != 0);
-	wire       sending   = (snd_bitcount != 0);
-	reg sds;
-	assign word_address = {{13{1'b0}} ,rcv_data[19:0]};
-	assign word_data = {MEM[word_address][7:0], MEM[word_address][15:8], MEM[word_address][23:16], MEM[word_address][31:24]};
+	assign word_data_dut = {mem2[7:0], mem2[15:8], mem2[23:16], mem2[31:24]};
 
 	always @(negedge SS) begin
-		rcv_bitcount <= 6'd32;
+		rcv_bitcount_dut <= 6'd32;
 	end
 	always @(posedge spi_clk) begin
       if (SS == 0) begin
-		if (receiving) begin
-			rcv_bitcount <= rcv_bitcount - 6'd1;
-			rcv_data <= {rcv_data[30:0], spi_mosi};
+		if (receiving_dut) begin
+			rcv_bitcount_dut <= rcv_bitcount_dut - 6'd1;
+			rcv_data_dut <= {rcv_data_dut[30:0], spi_mosi};
 			sds = 0;
 		end
-		else if (rcv_bitcount == 0 && sds == 0) begin
-			cmd_addr <= word_data;
-			snd_bitcount <= 6'd32;
+		else if (rcv_bitcount_dut == 0 && sds == 0) begin
+			cmd_addr_dut <= word_data_dut;
+			snd_bitcount_dut <= 6'd32;
 			sds = 1;
 		end
-		else if (sending) begin
-			snd_bitcount <= snd_bitcount - 6'd1;
-			cmd_addr <= {cmd_addr[30:0],1'b1};
-			//rcv_data <= {word_data[30:0],MISO};
+		else if (sending_dut) begin
+			snd_bitcount_dut <= snd_bitcount_dut - 6'd1;
+			cmd_addr_dut <= {cmd_addr_dut[30:0],1'b1};
+			//rcv_data_dut <= {word_data_dut[30:0],MISO};
 		end
       end
-
 	end
 	
 	initial begin
-      $readmemh("riscvtest.hex", MEM, 32'h00020000); 
+      $readmemh("riscvtest.hex", MEM); 
    end
+
+   
 
 endmodule
 
@@ -56,7 +58,6 @@ endmodule
 module testbench;
 	reg clk;
     reg reset;
-	reg debug_pin;
 
 	flash_spi FLASH_SPI (spi_mosi, spi_miso, spi_cs_n, spi_clk);
 
@@ -66,13 +67,11 @@ module testbench;
 		.spi_mosi(spi_mosi),
 		.spi_miso(spi_miso),
 		.spi_cs_n(spi_cs_n),
-		.spi_clk(spi_clk),
-		.debug_pin(debug_pin)
+		.spi_clk(spi_clk)
 	);
 
 
 	initial begin
-		debug_pin <= 0;
 		reset <= 0;
 		clk <= 0;
 		#20;
@@ -103,7 +102,7 @@ module testbench;
 // `endif
 	// end
 	initial
-        #5000 $finish;
+        #60000 $finish;
 
 	initial begin
 		$dumpfile("testbench.vcd");

@@ -5,6 +5,99 @@
 
  `define ASIC
 
+module LEDDriver(
+`ifdef NRV_IO_IRDA
+    output wire irda_TXD,
+    input  wire irda_RXD,
+    output wire irda_SD,		
+`endif		  
+    input wire 	       clk, // system clock
+    input wire 	       rstrb, // read strobe		
+    input wire 	       wstrb, // write strobe
+    input wire 	       sel, // select (read/write ignored if low)
+    input wire [31:0]  wdata, // data to be written
+    output wire [31:0] rdata, // read data
+    output wire [3:0]  LED    // LED pins
+);
+// The IceStick has an infrared reveiver/transmitter pair
+// See EXAMPLES/test_ir_sensor.c and EXAMPLES/test_ir_remote.c
+`ifdef NRV_IO_IRDA
+   reg [5:0] led_state;
+   assign LED = led_state[3:0];
+   assign rdata = (sel ? {25'b0, irda_RXD, led_state} : 32'b0);
+   assign irda_SD  = led_state[5];
+   assign irda_TXD = led_state[4];
+`else   
+   reg [3:0] led_state;
+   assign LED = led_state;
+   
+   initial begin
+      led_state = 4'b0000;
+   end
+   
+   assign rdata = (sel ? {28'b0, led_state} : 32'b0);
+`endif
+   
+   always @(posedge clk) begin
+      if(sel && wstrb) begin
+`ifdef NRV_IO_IRDA
+	 led_state <= wdata[5:0];
+`else
+	 led_state <= wdata[3:0];	 
+`endif	 
+`ifdef BENCH
+         $display("****************** LEDs = %b", wdata[3:0]);
+`endif	 
+      end
+   end
+endmodule
+
+module pwm #(
+
+    // Parameters
+    parameter       WIDTH = 12  // Default PWM values 0..4095
+
+) (
+
+    // Inputs
+    input           clk,
+    input           wstrb,  // Write strobe
+    input           sel,    // Select (read/write ignored if low)
+    input   [31:0]  wdata,  // Data to be written (to driver)
+    
+    // Outputs
+    output     led
+);
+
+    // Internal storage elements
+    reg             pwm_led = 1'b0;
+    reg [WIDTH-1:0] pwm_count = 0;
+    reg [WIDTH-1:0] count = 0;
+    
+    // Only control the first LED
+    assign led = pwm_led;
+    
+    // Update PWM duty cycle 
+    always @ (posedge clk) begin
+    
+        // If sel is high, record duty cycle count on strobe
+        if (sel && wstrb) begin
+            pwm_count <= wdata[WIDTH-1:0];
+            count <= 0;
+            
+        // Otherwise, continuously count and flash LED as necessary
+        end else begin
+            count <= count + 1;
+            if (count < pwm_count) begin
+                pwm_led <= 1'b1;
+            end else begin
+                pwm_led <= 1'b0;
+            end
+        end
+    end
+    
+endmodule
+
 module FemtoRV32(
    input 	     clk,
 
@@ -16,8 +109,7 @@ module FemtoRV32(
    input 	     mem_rbusy, // asserted if memory is busy reading value
    input 	     mem_wbusy, // asserted if memory is busy writing value
 
-   input 	     reset,      // set to 0 to reset the processor
-   input         debug_pin
+   input 	     reset      // set to 0 to reset the processor
 );
 
 
@@ -264,7 +356,7 @@ wire writeBack = ~(isBranch | isStore ) &
    always @(posedge clk) begin
       if(!reset) begin
          state      <= WAIT_ALU_OR_MEM; // Just waiting for !mem_wbusy
-         PC         <= (debug_pin == 1) ? 32'h00000000 : RESET_ADDR[ADDR_WIDTH-1:0];
+         PC         <= RESET_ADDR[ADDR_WIDTH-1:0];
       end else
 
       // See note [1] at the end of this file.
@@ -324,9 +416,12 @@ endmodule
 /***********************************************************************************************/
                         // ICE-SUGAR-NANO-CONFIG
 /**********************************************************************************************/
+/************************* Devices **********************************************************************************/
 
+//`define NRV_IO_LEDS        // Mapped IO, LEDs D1,D2,D3,D4 (D5 is used to display errors)
 `define NRV_IO_UART          // Mapped IO, virtual UART (USB)
 `define NRV_MAPPED_SPI_FLASH // SPI flash mapped in address space. Use with MINIRV32 to run code from SPI flash.
+`define NRV_IO_PWM
 
 `define NRV_FREQ 12                 // Validating on icesugar-nano
 `define NRV_RESET_ADDR 32'h00820000 // Jump execution to SPI Flash (800000h, +128k(20000h) for FPGA bitstream)
@@ -391,20 +486,29 @@ module HardwareConfig(
     output wire [31:0] rdata        // read data
 );
 
-// `include "HardwareConfig_bits.v"   
+// `include "HardwareConfig_bits.v"
+localparam IO_LEDS_bit                    = 0;  // RW four leds
+localparam IO_UART_DAT_bit                = 1;  // RW write: data to send (8 bits) read: received data (8 bits)
+localparam IO_UART_CNTL_bit               = 2;  // R  status. bit 8: valid read data. bit 9: busy sending   
+localparam IO_MAPPED_SPI_FLASH_bit        = 20;  // no register (just there to indicate presence)
+localparam IO_PWM_bit                     = 12;
 
 `ifdef NRV_COUNTER_WIDTH
    localparam counter_width = `NRV_COUNTER_WIDTH;
 `else
    localparam counter_width = 32;
-`endif   
+`endif 
+
 localparam NRV_DEVICES = 0
-		    
+
+`ifdef NRV_IO_LEDS
+   | (1 << IO_LEDS_bit)			 
+`endif		    
 `ifdef NRV_IO_UART
-   | (1 << 1) | (1 << 2)
+   | (1 << IO_UART_DAT_bit) | (1 << IO_UART_CNTL_bit)
 `endif			    			    
 `ifdef NRV_MAPPED_SPI_FLASH
-   | (1 << 20)
+   | (1 << IO_MAPPED_SPI_FLASH_bit)
 `endif			    	 
 ;
    
@@ -677,6 +781,14 @@ endmodule
 /*************************************************************************************/
 
 module femtosoc(
+`ifdef NRV_IO_LEDS
+               output D1,D2,D3,D4,D5, 
+`endif	      
+
+`ifdef NRV_IO_PWM
+               output D1,
+`endif	      
+
 `ifdef NRV_IO_UART
 					 input  RXD,
 					 output TXD,
@@ -697,7 +809,6 @@ module femtosoc(
 `ifdef RV_DEBUG_ICESUGAR_NANO
 					 output board_led,
 `endif
-					 input debug_pin,
 					 input clk
 );
 
@@ -942,7 +1053,23 @@ HardwareConfig hwconfig(
 `endif
    
 /*********************** Four LEDs ************************/
-
+`ifdef NRV_IO_LEDS
+   wire [31:0] leds_rdata;
+   LEDDriver leds(
+`ifdef NRV_IO_IRDA
+      .irda_TXD(irda_TXD),
+      .irda_RXD(irda_RXD),
+      .irda_SD(irda_SD),		
+`endif		  
+      .clk(clk),
+      .rstrb(io_rstrb),		  
+      .wstrb(io_wstrb),			
+      .sel(io_word_address[0]),
+      .wdata(io_wdata),		  
+      .rdata(leds_rdata),
+      .LED({D4,D3,D2,D1})
+   );
+`endif
 
 /********************** SSD1351/SSD1331 oled display ******/
  
@@ -1050,9 +1177,24 @@ end
 `endif		   
 ; 
 
+/********************************************/
+/* PWM */
+`ifdef NRV_IO_PWM
+pwm #(
+   .WIDTH(12)
+) pwm (
+   .clk(clk),
+   .wstrb(io_wstrb),
+   .sel(io_word_address[12]),
+   .wdata(io_wdata),
+   .led(D1)
+);
+`endif
+
 /****************************************************************/
 /* And last but not least, the processor                        */
-   
+   reg error=1'b0;
+
    
   FemtoRV32 #(
      .ADDR_WIDTH(`NRV_ADDR_WIDTH),
@@ -1070,9 +1212,29 @@ end
     .interrupt_request(1'b0),	      
 `endif     
     //.reset(reset && !uart_brk) // v1
-    .reset(reset), // v2
-    .debug_pin(debug_pin)
-  );
+    .reset(reset) // v2
+);
+
+`ifdef NRV_IO_LEDS  
+   assign D5 = error;
+ `ifdef FOMU
+    SB_RGBA_DRV #(
+        .CURRENT_MODE("0b1"),       // half current
+        .RGB0_CURRENT("0b000011"),  // 4 mA
+        .RGB1_CURRENT("0b000011"),  // 4 mA
+        .RGB2_CURRENT("0b000011")   // 4 mA
+    ) RGBA_DRIVER (
+        .CURREN(1'b1),
+        .RGBLEDEN(1'b1),
+        .RGB0PWM(D1), 
+        .RGB1PWM(D2), 
+        .RGB2PWM(D3), 
+        .RGB0(rgb0),
+        .RGB1(rgb1),
+        .RGB2(rgb2)
+    );
+ `endif
+`endif
 
 	/* ****************************** RV DEBUG iCESugar-nano ****************************** */
 	/* for debugging purposes */
