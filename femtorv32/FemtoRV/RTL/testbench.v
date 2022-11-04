@@ -58,6 +58,7 @@ endmodule
 module testbench;
 	reg clk;
     reg reset;
+	wire spi_mosi, spi_miso, spi_cs_n, spi_clk;
 
 	flash_spi FLASH_SPI (spi_mosi, spi_miso, spi_cs_n, spi_clk);
 
