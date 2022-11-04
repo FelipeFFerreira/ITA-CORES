@@ -1,123 +1,57 @@
-// femtorv32, a minimalistic RISC-V RV32I core
-//    (minus SYSTEM and FENCE that are not implemented)
-//
-//       Bruno Levy, May-June 2020
-//
-// This file: the "System on Chip" that goes with femtorv32.
 
-/*************************************************************************************/
+/*****************************************************************************/
+            // QUARK_NUCLEO
+/*****************************************************************************/
 
+//  `define ASIC
 
-`default_nettype none // Makes it easier to detect typos !
-/*******************************************************************************/
-// `include "femtosoc_config.v"        // User configuration of processor and SOC.
-// Default femtosoc configuration file for icesugar-nano
-
-/************************* Devices **********************************************************************************/
-
-//`define NRV_IO_LEDS          // Mapped IO, LEDs D1,D2,D3,D4 (D5 is used to display errors)
-//`define NRV_IO_IRDA          // In IO_LEDS, support for the IRDA on the IceStick (WIP)
-`define NRV_IO_PWM
-`define NRV_IO_UART          // Mapped IO, virtual UART (USB)
-//`define NRV_IO_SSD1351       // Mapped IO, 128x128x64K OLED screen
-//`define NRV_IO_MAX7219       // Mapped IO, 8x8 led matrix
-`define NRV_MAPPED_SPI_FLASH // SPI flash mapped in address space. Use with MINIRV32 to run code from SPI flash.
-
-/************************* Processor configuration *******************************************************************/
-
-/*
-`define NRV_FEMTORV32_TACHYON       // "Tachyon" (carefully latched for max highfreq). Needs more space (remove MAX7219).
-`define NRV_FREQ 60                 // Validated at 60 MHz on the IceStick. Can overclock to 80-95 MHz.
-`define NRV_RESET_ADDR 32'h00820000 // Jump execution to SPI Flash (800000h, +128k(20000h) for FPGA bitstream)
-`define NRV_COUNTER_WIDTH 24        // Number of bits in cycles counter
-`define NRV_TWOLEVEL_SHIFTER        // Faster shifts
-// tinyraytracer: 90 MHz, 14:02
-//                95 MHz, 13:18
-*/
-
-
-`define NRV_FEMTORV32_QUARK
-`define NRV_FREQ 12                 // Validating on icesugar-nano
-`define NRV_RESET_ADDR 32'h00820000 // Jump execution to SPI Flash (800000h, +128k(20000h) for FPGA bitstream)
-`define NRV_COUNTER_WIDTH 24        // Number of bits in cycles counter
-`define NRV_TWOLEVEL_SHIFTER        // Faster shifts
-// tinyraytracer: 70 MHz, 17:30 
-
-
-/************************* RAM (in bytes, needs to be a multiple of 4)***********************************************/
-
-`define NRV_RAM 6144 // default for iCESugar-nano (cannot do more !)
-
-/************************* Advanced devices configuration ***********************************************************/
-
-`define NRV_RUN_FROM_SPI_FLASH // Do not 'readmemh()' firmware from '.hex' file
-`define NRV_IO_HARDWARE_CONFIG // Comment-out to disable hardware config registers mapped in IO-Space
-                               // (note: firmware libfemtorv32 depends on it)
-
-/********************************************************************************************************************/
-
-`define NRV_CONFIGURED
-
-// `define RV_DEBUG_ICESUGAR_NANO  // so far, it blinks the onboard yellow LED (v1.2 of icesugar nano hw)
-/*******************************************************************************/
-
-/*******************************************************************************/
-`ifdef NRV_MAPPED_SPI_FLASH
-`define NRV_SPI_FLASH
-`endif
-/*******************************************************************************/
-
-//`include "PLL/femtopll.v"           // The PLL (generates clock at NRV_FREQ)
-
-// `include "DEVICES/uart.v"           // The UART (serial port over USB)
-// `include "DEVICES/SSD1351_1331.v"   // The OLED display
-// `include "DEVICES/MappedSPIFlash.v" // Idem, but mapped in memory
-// `include "DEVICES/MAX7219.v"        // 8x8 led matrix driven by a MAX7219 chip
-// `include "DEVICES/LEDs.v"           // Driver for 4 leds
-// `include "DEVICES/SDCard.v"         // Driver for SDCard (just for bitbanging for now)
-// `include "DEVICES/Buttons.v"        // Driver for the buttons
-// `include "DEVICES/FGA.v"            // Femto Graphic Adapter
-// `include "DEVICES/HardwareConfig.v" // Constant registers to query hardware config.
-
-// The Ice40UP5K has ample quantities (128 KB) of single-ported RAM that can be
-// used as system RAM (but cannot be inferred, uses a special block).
-`ifdef ICE40UP5K_SPRAM
-// `include "DEVICES/ice40up5k_spram.v"
-`endif
-
-
-/*************************************************************************************/
-
-`ifndef NRV_RESET_ADDR
- `define NRV_RESET_ADDR 0
-`endif
-
-`ifndef NRV_ADDR_WIDTH
- `define NRV_ADDR_WIDTH 24
-`endif
-
-/*************************************************************************************/
-
-`ifdef RV_DEBUG_ICESUGAR_NANO
-module led_blink(  
-                input  clk,
-                output led
-                );
-   reg [25:0] 			  counter;
-   assign led = ~counter[23];
-
+module LEDDriver(
+`ifdef NRV_IO_IRDA
+    output wire irda_TXD,
+    input  wire irda_RXD,
+    output wire irda_SD,		
+`endif		  
+    input wire 	       clk, // system clock
+    input wire 	       rstrb, // read strobe		
+    input wire 	       wstrb, // write strobe
+    input wire 	       sel, // select (read/write ignored if low)
+    input wire [31:0]  wdata, // data to be written
+    output wire [31:0] rdata, // read data
+    output wire [3:0]  LED    // LED pins
+);
+// The IceStick has an infrared reveiver/transmitter pair
+// See EXAMPLES/test_ir_sensor.c and EXAMPLES/test_ir_remote.c
+`ifdef NRV_IO_IRDA
+   reg [5:0] led_state;
+   assign LED = led_state[3:0];
+   assign rdata = (sel ? {25'b0, irda_RXD, led_state} : 32'b0);
+   assign irda_SD  = led_state[5];
+   assign irda_TXD = led_state[4];
+`else   
+   reg [3:0] led_state;
+   assign LED = led_state;
+   
    initial begin
-      counter = 0;
+      led_state = 4'b0000;
    end
-
-   always @(posedge clk)
-     begin
-        counter <= counter + 1;
-     end
+   
+   assign rdata = (sel ? {28'b0, led_state} : 32'b0);
+`endif
+   
+   always @(posedge clk) begin
+      if(sel && wstrb) begin
+`ifdef NRV_IO_IRDA
+	 led_state <= wdata[5:0];
+`else
+	 led_state <= wdata[3:0];	 
+`endif	 
+`ifdef BENCH
+         $display("****************** LEDs = %b", wdata[3:0]);
+`endif	 
+      end
+   end
 endmodule
-`endif //  `ifdef RV_DEBUG_ICESUGAR_NANO
 
-`ifdef NRV_IO_PWM
 module pwm #(
 
     // Parameters
@@ -163,9 +97,7 @@ module pwm #(
     end
     
 endmodule
-`endif 
 
-/*************************************************************************************/
 module FemtoRV32(
    input 	     clk,
 
@@ -477,6 +409,75 @@ wire writeBack = ~(isBranch | isStore ) &
 
 endmodule
 
+/*****************************************************************************/
+/*****************************************************************************/
+
+
+/***********************************************************************************************/
+                        // ICE-SUGAR-NANO-CONFIG
+/**********************************************************************************************/
+/************************* Devices **********************************************************************************/
+
+//`define NRV_IO_LEDS        // Mapped IO, LEDs D1,D2,D3,D4 (D5 is used to display errors)
+`define NRV_IO_UART          // Mapped IO, virtual UART (USB)
+`define NRV_MAPPED_SPI_FLASH // SPI flash mapped in address space. Use with MINIRV32 to run code from SPI flash.
+`define NRV_IO_PWM
+
+`define NRV_FREQ 12                 // Validating on icesugar-nano
+`define NRV_RESET_ADDR 32'h00820000 // Jump execution to SPI Flash (800000h, +128k(20000h) for FPGA bitstream)
+`define NRV_COUNTER_WIDTH 24        // Number of bits in cycles counter
+`define NRV_TWOLEVEL_SHIFTER        // Faster shifts
+
+`define NRV_RAM 4096 // default for iCESugar-nano (cannot do more !)
+
+/************************* Advanced devices configuration ***********************************************************/
+
+`define NRV_RUN_FROM_SPI_FLASH // Do not 'readmemh()' firmware from '.hex' file
+`define NRV_IO_HARDWARE_CONFIG // Comment-out to disable hardware config registers mapped in IO-Space
+                               // (note: firmware libfemtorv32 depends on it)
+
+`define NRV_CONFIGURED
+
+//`define RV_DEBUG_ICESUGAR_NANO  // so far, it blinks the onboard yellow LED (v1.2 of icesugar nano hw)
+
+/********************************************************************************************************************/
+/********************************************************************************************************************/
+
+/**********************************************************************************************************/
+                                    //FEMTOSOC-CONFIG
+/**********************************************************************************************************/
+`ifdef NRV_MAPPED_SPI_FLASH
+`define NRV_SPI_FLASH
+`endif
+`define ICE40
+// `define PASSTHROUGH_PLL
+
+`define NRV_IS_IO_ADDR(addr) |addr[23:22] // Asserted if address is in IO space (then it needs additional wait states)
+
+/********************************************************************************************************************/
+/********************************************************************************************************************/
+
+/**********************************************************************************************************/
+
+/**********************************************************************************************************/
+/**********************************************************************************************************/
+
+/**********************************************************************************************************/
+                           // HardwareConfig
+/**********************************************************************************************************/
+// We got a total of 20 bits for 1-hot addressing of IO registers.
+
+// localparam IO_UART_DAT_bit              = 1;  // RW write: data to send (8 bits) read: received data (8 bits)
+// localparam IO_UART_CNTL_bit             = 2;  // R  status. bit 8: valid read data. bit 9: busy sending
+
+// The three constant hardware config registers, using the three last bits of IO address space
+// localparam IO_HW_CONFIG_RAM_bit     = 17;  // R  total quantity of RAM, in bytes
+// localparam IO_HW_CONFIG_DEVICES_bit = 18;  // R  configured devices
+// localparam IO_HW_CONFIG_CPUINFO_bit = 19;  // R  CPU information CPL(6) FREQ(10) RESERVED(16)
+
+// These devices do not have hardware registers. Just a bit set in IO_HW_CONFIG_DEVICES
+// localparam IO_MAPPED_SPI_FLASH_bit  = 20;  // no register (just there to indicate presence)
+
 module HardwareConfig(
     input wire 	       clk, 
     input wire 	       sel_memory,  // available RAM
@@ -517,75 +518,8 @@ localparam NRV_DEVICES = 0
    
 endmodule
 
+/**********************************************************************************************************/
 
-
-// `include "MappedSPIFlash.v" // Idem, but mapped in memory
-`ifndef SPI_FLASH_CONFIGURED // Default: using slowest / simplest mode (command $03)
- `define SPI_FLASH_READ
-`endif
-
-/********************************************************************************************************************************/
-
-`ifdef SPI_FLASH_READ
-module MappedSPIFlash( 
-    input wire 	       clk,          // system clock
-    input wire reset,
-    input wire 	       rstrb,        // read strobe		
-    input wire [19:0]  word_address, // address of the word to be read
-
-    output wire [31:0] rdata,        // data read
-    output wire        rbusy,        // asserted if busy receiving data			    
-
-		             // SPI flash pins
-    output wire        CLK,  // clock
-    output reg         CS_N, // chip select negated (active low)		
-    output wire        MOSI, // master out slave in (data to be sent to flash)
-    input  wire        MISO  // master in slave out (data received from flash)
-);
-
-   reg [5:0]  snd_bitcount;
-   reg [31:0] cmd_addr;
-   reg [5:0]  rcv_bitcount;
-   reg [31:0] rcv_data;
-   wire       sending   = (snd_bitcount != 0);
-   wire       receiving = (rcv_bitcount != 0);
-   wire       busy = sending | receiving;
-   assign     rbusy = !CS_N; 
-   
-   assign  MOSI  = cmd_addr[31];
-   // initial CS_N  = 1'b1;
-   assign  CLK   = !CS_N && !clk; // CLK needs to be inverted (sample on posedge, shift of negedge) 
-                                  // and needs to be disabled when not sending/receiving (&& !CS_N).
-
-   // since least significant bytes are read first, we need to swizzle...
-   assign rdata = {rcv_data[7:0],rcv_data[15:8],rcv_data[23:16],rcv_data[31:24]};
-   
-   always @(posedge clk) begin
-      if (!reset) CS_N <= 1;
-         else if(rstrb) begin
-	            CS_N <= 1'b0;
-	            cmd_addr <= {8'h03, 2'b00,word_address[19:0], 2'b00};
-	            snd_bitcount <= 6'd32;
-      end else begin
-	 if(sending) begin
-	    if(snd_bitcount == 1) begin
-	       rcv_bitcount <= 6'd32;
-	    end
-	    snd_bitcount <= snd_bitcount - 6'd1;
-	    cmd_addr <= {cmd_addr[30:0],1'b1};
-	 end
-	 if(receiving) begin
-	    rcv_bitcount <= rcv_bitcount - 6'd1;
-	    rcv_data <= {rcv_data[30:0],MISO};
-	 end
-	 if(!busy) begin
-	    CS_N <= 1'b1;
-	 end
-      end
-   end
-endmodule
-`endif
-/*************************************************************************************/
 
 /**********************************************************************************************************/
                      // UART
@@ -747,6 +681,104 @@ end
 
 endmodule
 /**********************************************************************************************************/
+
+// `include "MappedSPIFlash.v" // Idem, but mapped in memory
+`ifndef SPI_FLASH_CONFIGURED // Default: using slowest / simplest mode (command $03)
+ `define SPI_FLASH_READ
+`endif
+
+/********************************************************************************************************************************/
+
+`ifdef SPI_FLASH_READ
+module MappedSPIFlash( 
+    input wire 	       clk,          // system clock
+    input wire reset,
+    input wire 	       rstrb,        // read strobe		
+    input wire [19:0]  word_address, // address of the word to be read
+
+    output wire [31:0] rdata,        // data read
+    output wire        rbusy,        // asserted if busy receiving data			    
+
+		             // SPI flash pins
+    output wire        CLK,  // clock
+    output reg         CS_N, // chip select negated (active low)		
+    output wire        MOSI, // master out slave in (data to be sent to flash)
+    input  wire        MISO  // master in slave out (data received from flash)
+);
+
+   reg [5:0]  snd_bitcount;
+   reg [31:0] cmd_addr;
+   reg [5:0]  rcv_bitcount;
+   reg [31:0] rcv_data;
+   wire       sending   = (snd_bitcount != 0);
+   wire       receiving = (rcv_bitcount != 0);
+   wire       busy = sending | receiving;
+   assign     rbusy = !CS_N; 
+   
+   assign  MOSI  = cmd_addr[31];
+   // initial CS_N  = 1'b1;
+   assign  CLK   = !CS_N && !clk; // CLK needs to be inverted (sample on posedge, shift of negedge) 
+                                  // and needs to be disabled when not sending/receiving (&& !CS_N).
+
+   // since least significant bytes are read first, we need to swizzle...
+   assign rdata = {rcv_data[7:0],rcv_data[15:8],rcv_data[23:16],rcv_data[31:24]};
+   
+   always @(posedge clk) begin
+      if (!reset) CS_N <= 1;
+         else if(rstrb) begin
+	            CS_N <= 1'b0;
+	            cmd_addr <= {8'h03, 2'b00,word_address[19:0], 2'b00};
+	            snd_bitcount <= 6'd32;
+      end else begin
+	 if(sending) begin
+	    if(snd_bitcount == 1) begin
+	       rcv_bitcount <= 6'd32;
+	    end
+	    snd_bitcount <= snd_bitcount - 6'd1;
+	    cmd_addr <= {cmd_addr[30:0],1'b1};
+	 end
+	 if(receiving) begin
+	    rcv_bitcount <= rcv_bitcount - 6'd1;
+	    rcv_data <= {rcv_data[30:0],MISO};
+	 end
+	 if(!busy) begin
+	    CS_N <= 1'b1;
+	 end
+      end
+   end
+endmodule
+`endif
+/*************************************************************************************/
+
+`ifndef NRV_RESET_ADDR
+ `define NRV_RESET_ADDR 0
+`endif
+
+`ifndef NRV_ADDR_WIDTH
+ `define NRV_ADDR_WIDTH 24
+`endif
+
+/*************************************************************************************/
+
+`ifdef RV_DEBUG_ICESUGAR_NANO
+module led_blink(  
+                input  clk,
+                input reset,
+                output led
+                );
+   reg [25:0] 			  counter;
+   assign led = ~counter[19];
+
+   always @(posedge clk)
+     begin
+      if (!reset) counter <= 0 ;
+        else counter <= counter + 1;
+     end
+endmodule
+`endif //  `ifdef RV_DEBUG_ICESUGAR_NANO
+
+
+/*************************************************************************************/
 
 module femtosoc(
 `ifdef NRV_IO_LEDS
@@ -929,7 +961,7 @@ assign reset = RESET;
 
 `else // Synthethizing BRAM
    
-   reg [31:0] RAM[0:(`NRV_RAM/32)-1];
+   reg [31:0] RAM[0:(`NRV_RAM/4)-1];
    reg [31:0] ram_rdata;
 
    // Initialize the RAM with the generated firmware hex file.
