@@ -1,5 +1,6 @@
 set_io clk D1
 
+set_io debug_pin A1
 set_io TXD B3
 set_io RXD A3
 
