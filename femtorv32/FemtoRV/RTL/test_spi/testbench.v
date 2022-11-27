@@ -1,54 +1,101 @@
-`include "femtosoc.v"
 
 `define SIMU_FLASH
 `define NRV_RAM 620
+`include "femtosoc.v"
 
 `timescale 1 ns / 10 ps
 
-module flash_spi(input reset_spi, inout spi_mosi, inout spi_miso, input SS, input spi_clk);
+`define RV_DEBUG_ICESUGAR_NANO
+
+
+`ifdef RV_DEBUG_ICESUGAR_NANO
+module led_blink(
+				input en,  
+                input  clk,
+                output led
+                );
+   reg [25:0] 			  counter;
+   assign led = counter[23];
+
+   initial begin
+      counter = 0;
+   end
+
+   always @(posedge clk)
+     begin
+        if (en) counter <= counter + 1;
+		else counter <= 0;
+     end
+endmodule
+
+`endif //  `ifdef RV_DEBUG_ICESUGAR_NANO
+
+module flash_spi(
+	input clk_led,
+	input reset_spi, 
+	inout spi_mosi, 
+	inout spi_miso,
+	input SS,
+	input spi_clk,
+	output board_led
+	);
 	
-	reg [31:0]			MEM[0:`NRV_RAM];
+	reg en = 0;
+	reg [7:0] recv_send;
+	reg [31:0]			MEM[`NRV_RAM:0];
 	reg [31:0]			rcv_data_dut;
 	wire [31:0] 		word_data_dut;
-	reg [5:0]			rcv_bitcount_dut;
-	reg [5:0]			snd_bitcount_dut;
+	reg [5:0]			cnt_rcv = 32;
+	reg [5:0]			cnt_snd = 0;
 	reg [31:0]			cmd_addr_dut;
 	reg 				sds;
-	wire       			receiving_dut = (rcv_bitcount_dut != 0);
-	wire       			sending_dut   = (snd_bitcount_dut != 0);
+	// wire       			receiving_dut = (rcv_bitcount_dut != 0);
+	// wire       			sending_dut   = (snd_bitcount_dut != 0);
 	assign  			spi_miso  = cmd_addr_dut[31];
    	wire [32 - 1:0] 	addr_dut;
    	assign 				addr_dut = {rcv_data_dut[19:0]};
    	wire [31:0] 		mem2;
-   	assign mem2 =  		(receiving_dut != 0) ? 32'hzzzz : 
+   	assign mem2 =  		(cnt_rcv != 0) ? 32'hzzzz : 
    						{ MEM[addr_dut[9 - 1:2]] };
 
 	assign word_data_dut = {mem2[7:0], mem2[15:8], mem2[23:16], mem2[31:24]};
+	
 
-	always @(negedge SS) begin
-		rcv_bitcount_dut <= 6'd32;
-	end
 	always @(posedge spi_clk) begin
-      if (SS == 0) begin
-		if (receiving_dut) begin
-			rcv_bitcount_dut <= rcv_bitcount_dut - 6'd1;
-			rcv_data_dut <= {rcv_data_dut[30:0], spi_mosi};
-			sds = 0;
+		if (SS == 0) begin
+			if (cnt_rcv >= 1 && cnt_snd === 0) begin
+				cnt_rcv <= cnt_rcv - 1;
+				rcv_data_dut <= {rcv_data_dut[30:0], spi_mosi};
+				sds = 0;
 		end
-		else if (rcv_bitcount_dut == 0 && sds == 0) begin
+		else if (cnt_rcv == 0 && sds == 0) begin
 			cmd_addr_dut <= word_data_dut;
-			snd_bitcount_dut <= 6'd32;
+			cnt_snd <= 32;
 			sds = 1;
 		end
-		else if (sending_dut) begin
-			snd_bitcount_dut <= snd_bitcount_dut - 6'd1;
+		else if (cnt_snd >= 1) begin
+			cnt_snd <= cnt_snd - 1;
 			cmd_addr_dut <= {cmd_addr_dut[30:0],1'b1};
-			//rcv_data_dut <= {word_data_dut[30:0],MISO};
 		end
-      end
+		end 
+		if (cnt_snd == 1) cnt_rcv <= 32;
 	end
 	
-		always @(posedge reset_spi) begin
+		/* for debugging purposes */
+	`ifdef RV_DEBUG_ICESUGAR_NANO
+		led_blink 
+	  			  my_debug_led(
+                  .clk(spi_clk),     
+                  .led(board_led), 
+				  .en(en)
+				  );
+`endif
+	// always @(posedge spi_clk) begin
+	// 	if (MEM[0] == 32'h004001B7 && MEM[605] == 32'h30703269 && MEM[466] == 32'h01000409)
+	// 		en <= 1;
+	// 	else en <= 0;
+	// end
+	always @(posedge reset_spi) begin
 		MEM[0] <= 32'h004001B7;
 		MEM[1] <= 32'h00002137;
 		MEM[2] <= 32'h80010113;
@@ -657,11 +704,8 @@ module flash_spi(input reset_spi, inout spi_mosi, inout spi_miso, input SS, inpu
 		MEM[605] <= 32'h30703269;
 	end	
 	
-
-	// initial begin
-    //   $readmemh("firmwares/verilog_my_verilog_flash.txt", MEM); 
-	// end	
 endmodule
+
 
 module testbench;
 
@@ -669,11 +713,12 @@ module testbench;
     localparam DURATION = 6000000;
 
 	reg clk;
-    reg reset, reset_spi;
+    reg reset,  reset_spi;
 	wire spi_mosi, spi_miso, spi_cs_n, spi_clk;
+	wire board_led;
 
 `ifdef SIMU_FLASH
-	flash_spi FLASH_SPI (reset_spi, spi_mosi, spi_miso, spi_cs_n, spi_clk);
+	flash_spi FLASH_SPI (clk, reset_spi, spi_mosi, spi_miso, spi_cs_n, spi_clk, board_led);
 `endif
 `ifndef SIMU_FLASH	
 	initial
@@ -687,7 +732,6 @@ module testbench;
 		.spi_miso(spi_miso),
 		.spi_cs_n(spi_cs_n),
 		.spi_clk(spi_clk)
-	
 	);
 
 	initial begin
@@ -695,9 +739,7 @@ module testbench;
 		#1;
 		reset_spi <=1;
 	end
-
 	initial begin
-	
 		reset <= 0;
 		clk <= 0;
 		#50;

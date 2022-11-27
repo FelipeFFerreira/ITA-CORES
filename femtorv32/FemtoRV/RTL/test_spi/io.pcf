@@ -1,0 +1,10 @@
+
+set_io clk_led D1
+set_io reset_spi    C5
+set_io board_led    B6
+
+set_io SS           B5 #azul
+set_io spi_miso     B4 #cinza
+set_io spi_mosi     C6 #branco
+set_io spi_clk      E3 #preto
+

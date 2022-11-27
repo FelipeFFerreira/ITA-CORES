@@ -1,13 +1,45 @@
-`include "femtosoc.v"
 
-`define SIMU_FLASH
+
 `define NRV_RAM 620
 
-`timescale 1 ns / 10 ps
+`define RV_DEBUG_ICESUGAR_NANO
 
-module flash_spi(input reset_spi, inout spi_mosi, inout spi_miso, input SS, input spi_clk);
+
+`ifdef RV_DEBUG_ICESUGAR_NANO
+module led_blink(
+				input en,  
+                input  clk,
+                output led
+                );
+   reg [25:0] 			  counter;
+   assign led = counter[23];
+
+   initial begin
+      counter = 0;
+   end
+
+   always @(posedge clk)
+     begin
+        if (en) counter <= counter + 1;
+		else counter <= 0;
+     end
+endmodule
+
+`endif //  `ifdef RV_DEBUG_ICESUGAR_NANO
+
+module flash_spi(
+	input clk_led,
+	input reset_spi, 
+	inout spi_mosi, 
+	inout spi_miso,
+	input SS,
+	input spi_clk,
+	output board_led
+	);
 	
-	reg [31:0]			MEM[0:`NRV_RAM];
+	reg en = 0;
+	reg [7:0] recv_send;
+	reg [31:0]			MEM[`NRV_RAM:0];
 	reg [31:0]			rcv_data_dut;
 	wire [31:0] 		word_data_dut;
 	reg [5:0]			rcv_bitcount_dut;
@@ -24,12 +56,14 @@ module flash_spi(input reset_spi, inout spi_mosi, inout spi_miso, input SS, inpu
    						{ MEM[addr_dut[9 - 1:2]] };
 
 	assign word_data_dut = {mem2[7:0], mem2[15:8], mem2[23:16], mem2[31:24]};
+	reg [7:0] 			  en_rcv = 0;
 
-	always @(negedge SS) begin
+	always @*(posedge spi_clk or SS) begin
+      if (SS == 0 && en_rcv == 0) begin
 		rcv_bitcount_dut <= 6'd32;
-	end
-	always @(posedge spi_clk) begin
-      if (SS == 0) begin
+		en_rcv <= 1;
+	  end
+	  if (SS == 0) begin
 		if (receiving_dut) begin
 			rcv_bitcount_dut <= rcv_bitcount_dut - 6'd1;
 			rcv_data_dut <= {rcv_data_dut[30:0], spi_mosi};
@@ -43,12 +77,27 @@ module flash_spi(input reset_spi, inout spi_mosi, inout spi_miso, input SS, inpu
 		else if (sending_dut) begin
 			snd_bitcount_dut <= snd_bitcount_dut - 6'd1;
 			cmd_addr_dut <= {cmd_addr_dut[30:0],1'b1};
+			if (snd_bitcount_dut == 1) en_rcv <= 0;
 			//rcv_data_dut <= {word_data_dut[30:0],MISO};
 		end
       end
 	end
 	
-		always @(posedge reset_spi) begin
+		/* for debugging purposes */
+	`ifdef RV_DEBUG_ICESUGAR_NANO
+		led_blink 
+	  			  my_debug_led(
+                  .clk(spi_clk),     
+                  .led(board_led), 
+				  .en(en)
+				  );
+`endif
+	// always @(posedge spi_clk) begin
+	// 	if (MEM[0] == 32'h004001B7 && MEM[605] == 32'h30703269 && MEM[466] == 32'h01000409)
+	// 		en <= 1;
+	// 	else en <= 0;
+	// end
+	always @(posedge reset_spi) begin
 		MEM[0] <= 32'h004001B7;
 		MEM[1] <= 32'h00002137;
 		MEM[2] <= 32'h80010113;
@@ -657,65 +706,4 @@ module flash_spi(input reset_spi, inout spi_mosi, inout spi_miso, input SS, inpu
 		MEM[605] <= 32'h30703269;
 	end	
 	
-
-	// initial begin
-    //   $readmemh("firmwares/verilog_my_verilog_flash.txt", MEM); 
-	// end	
-endmodule
-
-module testbench;
-
-	// Simulation time: 10000 * 1 us = 10 ms
-    localparam DURATION = 6000000;
-
-	reg clk;
-    reg reset, reset_spi;
-	wire spi_mosi, spi_miso, spi_cs_n, spi_clk;
-
-`ifdef SIMU_FLASH
-	flash_spi FLASH_SPI (reset_spi, spi_mosi, spi_miso, spi_cs_n, spi_clk);
-`endif
-`ifndef SIMU_FLASH	
-	initial
-		$readmemh("firmwares/hello.bram.txt", testbench.ITA_CORE.RAM); 
-`endif 
-
-    femtosoc ITA_CORE(
-		.RESET(reset),
-    	.clk(clk),
-		.spi_mosi(spi_mosi),
-		.spi_miso(spi_miso),
-		.spi_cs_n(spi_cs_n),
-		.spi_clk(spi_clk)
-	
-	);
-
-	initial begin
-		reset_spi <=0;
-		#1;
-		reset_spi <=1;
-	end
-
-	initial begin
-	
-		reset <= 0;
-		clk <= 0;
-		#50;
-        reset = 1'b1;
-	end
-
-  // Generate read clock signal (about 12 MHz)
-    always begin
-        #41.667
-        clk = ~clk;
-    end
-
-    initial begin
-        $dumpfile("testbench.vcd");
-		$dumpvars(0, testbench);
-        #(DURATION)
-        $display("Finished!");
-        $finish;
-    end
-
 endmodule
