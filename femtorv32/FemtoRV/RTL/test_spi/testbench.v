@@ -1,14 +1,10 @@
-
-`define SIMU_FLASH
-`define NRV_RAM 620
 `include "femtosoc.v"
 
 `timescale 1 ns / 10 ps
 
-`define RV_DEBUG_ICESUGAR_NANO
+`define SIMU_FLASH
+`define NRV_RAM 620
 
-
-`ifdef RV_DEBUG_ICESUGAR_NANO
 module led_blink(
 				input en,  
                 input  clk,
@@ -27,8 +23,6 @@ module led_blink(
 		else counter <= 0;
      end
 endmodule
-
-`endif //  `ifdef RV_DEBUG_ICESUGAR_NANO
 
 module flash_spi(
 	input clk_led,
@@ -86,20 +80,13 @@ module flash_spi(
 		if (mem2 == 32'h00002137) en <= 1;
 	end
 	
-		/* for debugging purposes */
-	`ifdef RV_DEBUG_ICESUGAR_NANO
 		led_blink 
 	  			  my_debug_led(
                   .clk(spi_clk),     
                   .led(board_led), 
 				  .en(en)
 				  );
-`endif
-	// always @(posedge spi_clk) begin
-	// 	if (MEM[0] == 32'h004001B7 && MEM[605] == 32'h30703269 && MEM[466] == 32'h01000409)
-	// 		en <= 1;
-	// 	else en <= 0;
-	// end
+
 	always @(posedge reset_spi) begin
 		MEM[0] <= 32'h004001B7;
 		MEM[1] <= 32'h00002137;
@@ -745,12 +732,6 @@ module testbench;
 		reset_spi <=1;
 	end
 	initial begin
-		reset <= 0;
-		clk <= 0;
-		#50;
-        reset <= 1'b1;
-		reset_spi <= 1'b1;
-		#100000;
 		reset <= 0;
 		clk <= 0;
 		#50;
