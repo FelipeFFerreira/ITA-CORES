@@ -62,6 +62,10 @@ module flash_spi(
 	
 
 	always @(posedge spi_clk) begin
+		if (!reset_spi) begin
+			cnt_rcv = 32;
+			cnt_snd = 0;
+		end else
 		if (SS == 0) begin
 			if (cnt_rcv >= 1 && cnt_snd === 0) begin
 				cnt_rcv <= cnt_rcv - 1;
@@ -79,6 +83,7 @@ module flash_spi(
 		end
 		end 
 		if (cnt_snd == 1) cnt_rcv <= 32;
+		if (mem2 == 32'h00002137) en <= 1;
 	end
 	
 		/* for debugging purposes */
@@ -743,7 +748,14 @@ module testbench;
 		reset <= 0;
 		clk <= 0;
 		#50;
-        reset = 1'b1;
+        reset <= 1'b1;
+		reset_spi <= 1'b1;
+		#100000;
+		reset <= 0;
+		clk <= 0;
+		#50;
+        reset <= 1'b1;
+		reset_spi <= 1'b1;
 	end
 
   // Generate read clock signal (about 12 MHz)

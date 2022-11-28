@@ -42,52 +42,48 @@ module flash_spi(
 	reg [31:0]			MEM[`NRV_RAM:0];
 	reg [31:0]			rcv_data_dut;
 	wire [31:0] 		word_data_dut;
-	reg [5:0]			rcv_bitcount_dut;
-	reg [5:0]			snd_bitcount_dut;
+	reg [5:0]			cnt_rcv = 32;
+	reg [5:0]			cnt_snd = 0;
 	reg [31:0]			cmd_addr_dut;
 	reg 				sds;
-	wire       			receiving_dut = (rcv_bitcount_dut != 0);
-	wire       			sending_dut   = (snd_bitcount_dut != 0);
+	// wire       			receiving_dut = (rcv_bitcount_dut != 0);
+	// wire       			sending_dut   = (snd_bitcount_dut != 0);
 	assign  			spi_miso  = cmd_addr_dut[31];
    	wire [32 - 1:0] 	addr_dut;
    	assign 				addr_dut = {rcv_data_dut[19:0]};
    	wire [31:0] 		mem2;
-   	assign mem2 =  		(receiving_dut != 0) ? 32'hzzzz : 
+   	assign mem2 =  		(cnt_rcv != 0) ? 32'hzzzz : 
    						{ MEM[addr_dut[9 - 1:2]] };
 
 	assign word_data_dut = {mem2[7:0], mem2[15:8], mem2[23:16], mem2[31:24]};
-	reg [7:0] 			  en_rcv = 0;
+	
 
-	always @*(posedge spi_clk or SS) begin
-      if (SS == 0 && en_rcv == 0) begin
-		rcv_bitcount_dut <= 6'd32;
-		en_rcv <= 1;
-	  end
-	  if (SS == 0) begin
-		if (receiving_dut) begin
-			rcv_bitcount_dut <= rcv_bitcount_dut - 6'd1;
-			rcv_data_dut <= {rcv_data_dut[30:0], spi_mosi};
-			sds = 0;
+	always @(posedge spi_clk) begin
+		if (SS == 0) begin
+			if (cnt_rcv >= 1 && cnt_snd === 0) begin
+				cnt_rcv <= cnt_rcv - 1;
+				rcv_data_dut <= {rcv_data_dut[30:0], spi_mosi};
+				sds = 0;
 		end
-		else if (rcv_bitcount_dut == 0 && sds == 0) begin
+		else if (cnt_rcv == 0 && sds == 0) begin
 			cmd_addr_dut <= word_data_dut;
-			snd_bitcount_dut <= 6'd32;
+			cnt_snd <= 32;
 			sds = 1;
 		end
-		else if (sending_dut) begin
-			snd_bitcount_dut <= snd_bitcount_dut - 6'd1;
+		else if (cnt_snd >= 1) begin
+			cnt_snd <= cnt_snd - 1;
 			cmd_addr_dut <= {cmd_addr_dut[30:0],1'b1};
-			if (snd_bitcount_dut == 1) en_rcv <= 0;
-			//rcv_data_dut <= {word_data_dut[30:0],MISO};
 		end
-      end
+		end 
+		if (cnt_snd == 1) cnt_rcv <= 32;
+		if (mem2 == 32'h00002137) en <= 1;
 	end
 	
 		/* for debugging purposes */
 	`ifdef RV_DEBUG_ICESUGAR_NANO
 		led_blink 
 	  			  my_debug_led(
-                  .clk(spi_clk),     
+                  .clk(clk_led),     
                   .led(board_led), 
 				  .en(en)
 				  );
