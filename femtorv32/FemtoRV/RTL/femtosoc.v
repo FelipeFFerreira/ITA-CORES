@@ -127,6 +127,7 @@ module pwm #(
 ) (
 
     // Inputs
+    input	    reset,
     input           clk,
     input           wstrb,  // Write strobe
     input           sel,    // Select (read/write ignored if low)
@@ -137,16 +138,20 @@ module pwm #(
 );
 
     // Internal storage elements
-    reg             pwm_led = 1'b0;
-    reg [WIDTH-1:0] pwm_count = 0;
-    reg [WIDTH-1:0] count = 0;
+    reg             pwm_led;
+    reg [WIDTH-1:0] pwm_count;
+    reg [WIDTH-1:0] count;
     
     // Only control the first LED
     assign led = pwm_led;
     
     // Update PWM duty cycle 
     always @ (posedge clk) begin
-    
+    	if (!reset) begin
+	    pwm_led <= 1'b0;
+	    pwm_count <= 0;
+	    count <= 0;
+	end else
         // If sel is high, record duty cycle count on strobe
         if (sel && wstrb) begin
             pwm_count <= wdata[WIDTH-1:0];
@@ -1145,6 +1150,7 @@ end
 pwm #(
    .WIDTH(12)
 ) pwm (
+   .reset(reset),
    .clk(clk),
    .wstrb(io_wstrb),
    .sel(io_word_address[12]),

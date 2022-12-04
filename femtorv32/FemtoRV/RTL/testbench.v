@@ -2,7 +2,7 @@
 
 `timescale 1 ns / 10 ps
 
-`define SIMU_FLASH
+// `define SIMU_FLASH
 `define NRV_RAM 620
 
 module led_blink(
@@ -80,15 +80,17 @@ module flash_spi(
 		if (mem2 == 32'h00002137) en <= 1;
 	end
 	
-		/* for debugging purposes */
-	`ifdef RV_DEBUG_ICESUGAR_NANO
 		led_blink 
 	  			  my_debug_led(
                   .clk(spi_clk),     
                   .led(board_led), 
 				  .en(en)
 				  );
-`endif
+
+`ifdef SIMU_FLASH
+	initial
+		$readmemh("firmwares_tests/verilog_my_verilog_flash.txt", MEM); 
+`else	
 
 	always @(posedge reset_spi) begin
 		MEM[0] <= 32'h004001B7;
@@ -697,29 +699,25 @@ module flash_spi(
 		MEM[603] <= 32'h05000000;
 		MEM[604] <= 32'h32337672;
 		MEM[605] <= 32'h30703269;
-	end	
-	
+	end
+
+`endif
+
 endmodule
 
 
 module testbench;
 
 	// Simulation time: 10000 * 1 us = 10 ms
-    localparam DURATION = 10000000;
+    localparam DURATION = 6000000;
 
 	reg clk;
     reg reset,  reset_spi;
 	wire spi_mosi, spi_miso, spi_cs_n, spi_clk;
 	wire board_led;
 
-`ifdef SIMU_FLASH
 	flash_spi FLASH_SPI (clk, reset_spi, spi_mosi, spi_miso, spi_cs_n, spi_clk, board_led);
-`endif
-`ifndef SIMU_FLASH	
-	initial
-		$readmemh("firmwares/hello.bram.txt", testbench.ITA_CORE.RAM); 
-`endif 
-
+ 
     femtosoc ITA_CORE(
 		.RESET(reset),
     	.clk(clk),
