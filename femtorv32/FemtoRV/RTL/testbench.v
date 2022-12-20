@@ -2,7 +2,7 @@
 
 `timescale 1 ns / 10 ps
 
-// `define SIMU_FLASH
+`define SIMU_FLASH // use para pegar as intrunções via readmemh()
 `define NRV_RAM 620
 
 module led_blink(
@@ -27,8 +27,8 @@ endmodule
 module flash_spi(
 	input clk_led,
 	input reset_spi, 
-	inout spi_mosi, 
-	inout spi_miso,
+	input spi_mosi, 
+	output spi_miso,
 	input SS,
 	input spi_clk,
 	output board_led
@@ -89,7 +89,7 @@ module flash_spi(
 
 `ifdef SIMU_FLASH
 	initial
-		$readmemh("firmwares_tests/verilog_my_verilog_flash.txt", MEM); 
+		$readmemh("firmwares_tests/teste_uart.hex", MEM); 
 `else	
 
 	always @(posedge reset_spi) begin

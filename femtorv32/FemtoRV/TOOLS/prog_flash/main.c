@@ -14,8 +14,8 @@ static FILE * mode_file(char file[], char mode[]) {
 
 int main()
 {
-    FILE* fptr1 = mode_file("verilog_my_verilog_flash_invertido.txt","r");
-    FILE* fptr2 = mode_file("prog_flash_invertido.txt","w");
+    FILE* fptr1 = mode_file("firmware-verilog_spiflash0_testc.hex","r");
+    FILE* fptr2 = mode_file("firmware-verilog_spiflash0_testc.txt","w");
     char str[1000][50];
     int len_str = 0;
      while (!feof(fptr1)) {

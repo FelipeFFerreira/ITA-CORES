@@ -27,6 +27,7 @@ int main() {
    		b = 0;
 		printf("\r\n");
 		printf("%d. [ITA-RVITA]\r\n", cnt++);
+		printf("FRRQ %d\n", FEMTORV32_FREQ);
 	}	
 
 	return 0;

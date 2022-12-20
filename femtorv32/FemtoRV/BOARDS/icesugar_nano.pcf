@@ -5,14 +5,15 @@ set_io RXD A3
 
 set_io D1 B6
 
-set_io spi_cs_n E3 #roxo
-set_io spi_miso B5 #preto
-set_io spi_mosi C6 #branco
-set_io spi_clk  B4 #preto dan
+#TEST-SPI
+#set_io spi_cs_n E3 #roxo
+#set_io spi_miso B5 #preto
+#set_io spi_mosi C6 #branco
+#set_io spi_clk  B4 #preto dan
 
-#set_io spi_cs_n D5
-#set_io spi_miso F5
-#set_io spi_mosi E4
-#set_io spi_clk  E5
+set_io spi_cs_n D5
+set_io spi_miso F5
+set_io spi_mosi E4
+set_io spi_clk  E5
 
 set_io RESET    C5

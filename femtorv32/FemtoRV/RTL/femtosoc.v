@@ -762,7 +762,7 @@ module femtosoc(
 `endif	      
 
 `ifdef NRV_SPI_FLASH
-					 inout spi_mosi, inout spi_miso, output spi_cs_n,
+					 output spi_mosi, input spi_miso, output spi_cs_n,
  `ifndef ULX3S	
 					 output spi_clk, // ULX3S has spi clk shared with ESP32, using USRMCLK (below)	
  `endif
@@ -834,8 +834,20 @@ wire       reset = &reset_cnt;
       end
    end
 `endif
-`else wire  reset;
-assign reset = RESET;
+`else
+   reg reg1, reg2, reg3;
+   always@(posedge clk, negedge RESET) begin
+      if (!RESET)
+         reg1 <= 1'b0;
+      else reg1 <= 1'b1;
+   end
+   always@(posedge clk) begin
+      reg2 <= reg1;
+      reg3 <= reg2;
+   end
+
+wire  reset;
+assign reset = reg3;
 `endif
 /* verilator lint_on WIDTH */   
    

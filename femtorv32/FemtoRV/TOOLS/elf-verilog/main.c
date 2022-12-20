@@ -13,10 +13,17 @@ static FILE * mode_file(char file[], char mode[]) {
 
 int main()
 {
-    FILE* fptr1 = mode_file("my_verilog_flash.hex","r");
-    FILE* fptr2 = mode_file("verilog_my_verilog_flash.hex","w");
-    int cnt = 0;
-    char ch, byte[9], byte_verilog[9];
+    int cnt = 0, i = 0;
+    char ch, byte[9], byte_verilog[9], file[26], file_destino[50], file_origem[50];
+
+    printf("Arquivo .hex: ");
+    scanf(" %50[^\n]", file);
+   // sprintf(file_origem, "verilogs-to-convert%s", file);
+    FILE* fptr1 = mode_file(file, "r");
+    sprintf(file_destino, "firmware-%s", file);
+    FILE* fptr2 = mode_file(file_destino, "w");
+    fprintf(fptr2, "\t%s\n", "always @(posedge reset_spi) begin");
+
 
     do {
         ch = fgetc(fptr1);
@@ -36,12 +43,10 @@ int main()
             byte_verilog[8] = '\0';
 
             printf("byte = %s\n", byte_verilog);
-            fprintf(fptr2, "%s\n", byte_verilog);
+            fprintf(fptr2, "\t\tMEM[%d] <= 32'h%s;\n", i++, byte_verilog);
             cnt = 0;
-
         }
-
-
     } while(ch != EOF);
+    fprintf(fptr2, "\t%s\n", "end");
     return 0;
 }
