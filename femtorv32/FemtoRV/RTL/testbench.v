@@ -89,7 +89,7 @@ module flash_spi(
 
 `ifdef SIMU_FLASH
 	initial
-		$readmemh("firmwares_tests/tests/firmware-add.hex", MEM); 
+		$readmemh("hex.hex", MEM); 
 `else	
 
 	always @(posedge reset_spi) begin

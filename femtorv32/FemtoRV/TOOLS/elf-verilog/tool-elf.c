@@ -14,65 +14,69 @@ static FILE * mode_file(char file[], char mode[]) {
     return fptr;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     int cnt = 0, i = 0;
-    char ch, byte[9], byte_verilog[9], input[26], file[26], file_destino[50], file_origem[50];
+    char ch, byte[9], byte_verilog[9], file[26], file_destino[50], file_origem[50];
+    const char* directory_path = "../../build/"; 
 
-    printf("Arquivo .hex: ");
-    scanf(" %26[^\n]", input);
-    snprintf(file, sizeof(file), "%s.hex", input);
-   // sprintf(file_origem, "verilogs-to-convert%s", file);
-    FILE* fptr1 = mode_file(file, "r");
-    sprintf(file_destino, "../../build/%s/firmware-%s", input, file);
-    FILE* fptr2 = mode_file(file_destino, "w");
-     #ifdef SPI
-        fprintf(fptr2, "\t%s\n", "always @(posedge reset_spi) begin");
-    #endif // SPI
+    if (argc > 1) {
+        char *string = argv[1];
 
-    bool lp = false;
-    int lp_count = 0;
-    do {
-       
-        ch = fgetc(fptr1);
-        if (ch == '@' | lp == true)
-        {
-            if (++lp_count < BYTE + 1)
-                lp = true;
-            else if (ch == '\n') 
-                lp = false;
-            printf("%c ", ch);
-        }
-        else {
-            if (ch != ' ' && ch != '\n' && ch != '\r' ) {
-                // printf("[%d] Character: %c (%d)\n", ++lp_count, ch, ch);
-                byte[cnt++] = ch;
+        printf("Formatando arquivo parao teste [%s]\n", string);
+        snprintf(file, sizeof(file), "%s%s/%s.hex", directory_path, argv[1], argv[1]);
+        FILE* fptr1 = mode_file(file, "r");
+        sprintf(file_destino, "%s%s/%s_firmware.hex", directory_path, argv[1], argv[1]);
+        FILE* fptr2 = mode_file(file_destino, "w");
+        
+        #ifdef SPI
+            fprintf(fptr2, "\t%s\n", "always @(posedge reset_spi) begin");
+        #endif // SPI
+
+        bool lp = false;
+        int lp_count = 0;
+        do {
+            ch = fgetc(fptr1);
+            if (ch == '@' | lp == true)
+            {
+                if (++lp_count < BYTE + 1)
+                    lp = true;
+                else if (ch == '\n') 
+                    lp = false;
             }
+            else {
+                if (ch != ' ' && ch != '\n' && ch != '\r' ) {
+                    byte[cnt++] = ch;
+                }
 
-            if (cnt == BYTE) {
-                byte[cnt++] = '\0';
-                byte_verilog[0] = byte[6];
-                byte_verilog[1] = byte[7];
-                byte_verilog[2] = byte[4];
-                byte_verilog[3] = byte[5];
-                byte_verilog[4] = byte[2];
-                byte_verilog[5] = byte[3];
-                byte_verilog[6] = byte[0];
-                byte_verilog[7] = byte[1];
-                byte_verilog[8] = '\0';
-                #ifdef SPI
-                    printf("byte = %s\n", byte_verilog);
-                    fprintf(fptr2, "\t\tMEM[%d] <= 32'h%s;\n", i++, byte_verilog);
-                #endif // SPI
-                #ifdef CORE
-                    fprintf(fptr2, "%s\n", byte_verilog);
-                #endif // CORE
-                cnt = 0;
+                if (cnt == BYTE) {
+                    byte[cnt++] = '\0';
+                    byte_verilog[0] = byte[6];
+                    byte_verilog[1] = byte[7];
+                    byte_verilog[2] = byte[4];
+                    byte_verilog[3] = byte[5];
+                    byte_verilog[4] = byte[2];
+                    byte_verilog[5] = byte[3];
+                    byte_verilog[6] = byte[0];
+                    byte_verilog[7] = byte[1];
+                    byte_verilog[8] = '\0';
+                    #ifdef SPI
+                        printf("byte = %s\n", byte_verilog);
+                        fprintf(fptr2, "\t\tMEM[%d] <= 32'h%s;\n", i++, byte_verilog);
+                    #endif // SPI
+                    #ifdef CORE
+                        fprintf(fptr2, "%s\n", byte_verilog);
+                    #endif // CORE
+                    cnt = 0;
+                }
             }
-        }
-    } while(ch != EOF);
-     #ifdef SPI
-        fprintf(fptr2, "\t%s\n", "end");
-     #endif // SPI
-    return 0;
+        } while(ch != EOF);
+        #ifdef SPI
+            fprintf(fptr2, "\t%s\n", "end");
+        #endif // SPI
+        return 0;
+    } else {
+        printf("Nenhuma string fornecida como argumento.\n");
+        return 1;
+    }
 }

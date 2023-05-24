@@ -10,29 +10,18 @@ run:
 # aux-make-all.o: src/aux-make-all.c
 # 	gcc -c src/aux-make-all.c
 
-# run-hex: run-hex.o
-# 	gcc -o bin/run-hex run-hex.o
-
-# run-hex.o: src/run-hex.c
-# 	gcc -c src/run-hex.c
-
 # run-test: run-test.o
 # 	gcc -o bin/run-test run-test.o
 
 # run-test.o: src/run-test.c
 # 	gcc -c src/run-test.c
 
-# run-dump: run-dump.o
-# 	gcc -o bin/run-dump run-dump.o
 
-# run-dump.o: src/run-dump.c
-# 	gcc -c src/run-dump.c
+run-vvp: run-vvp.o
+	gcc -o bin/run-vvp run-vvp.o
 
-# run-vvp: run-vvp.o
-# 	gcc -o bin/run-vvp run-vvp.o
-
-# run-vvp.o: src/run-vvp.c
-# 	gcc -c src/run-vvp.c
+run-vvp.o: src/run-vvp.c
+	gcc -c src/run-vvp.c
 
 run-tools-elf: tool-elf.o
 	gcc -o bin/tool-elf tool-elf.o
