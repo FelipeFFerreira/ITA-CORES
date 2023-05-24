@@ -17,27 +17,26 @@ static FILE * mode_file(char file[], char mode[]) {
 int main()
 {
     int cnt = 0, i = 0;
-    char ch, byte[9], byte_verilog[9], file[26], file_destino[50], file_origem[50];
-            printf("TESTE\n");
+    char ch, byte[9], byte_verilog[9], input[26], file[26], file_destino[50], file_origem[50];
 
     printf("Arquivo .hex: ");
-    scanf(" %50[^\n]", file);
+    scanf(" %26[^\n]", input);
+    snprintf(file, sizeof(file), "%s.hex", input);
    // sprintf(file_origem, "verilogs-to-convert%s", file);
     FILE* fptr1 = mode_file(file, "r");
-    sprintf(file_destino, "firmware-%s", file);
+    sprintf(file_destino, "../../build/%s/firmware-%s", input, file);
     FILE* fptr2 = mode_file(file_destino, "w");
      #ifdef SPI
         fprintf(fptr2, "\t%s\n", "always @(posedge reset_spi) begin");
     #endif // SPI
 
     bool lp = false;
-    char lp_count = 0;
+    int lp_count = 0;
     do {
        
         ch = fgetc(fptr1);
         if (ch == '@' | lp == true)
         {
-            printf("entrei\n");
             if (++lp_count < BYTE + 1)
                 lp = true;
             else if (ch == '\n') 
@@ -45,10 +44,11 @@ int main()
             printf("%c ", ch);
         }
         else {
-            printf("nao entrei\n");
-            if (ch != ' ' && ch != '\n') {
+            if (ch != ' ' && ch != '\n' && ch != '\r' ) {
+                // printf("[%d] Character: %c (%d)\n", ++lp_count, ch, ch);
                 byte[cnt++] = ch;
             }
+
             if (cnt == BYTE) {
                 byte[cnt++] = '\0';
                 byte_verilog[0] = byte[6];

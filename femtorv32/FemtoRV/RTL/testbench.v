@@ -89,7 +89,7 @@ module flash_spi(
 
 `ifdef SIMU_FLASH
 	initial
-		$readmemh("firmwares_tests/teste_uart.hex", MEM); 
+		$readmemh("firmwares_tests/tests/firmware-add.hex", MEM); 
 `else	
 
 	always @(posedge reset_spi) begin
@@ -747,7 +747,7 @@ module testbench;
     end
 
     initial begin
-        $dumpfile("testbench.vcd");
+        $dumpfile("testbench_XD.vcd");
 		$dumpvars(0, testbench);
         #(DURATION)
         $display("Finished!");
