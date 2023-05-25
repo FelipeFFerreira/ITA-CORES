@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
         #ifdef SPI
             fprintf(fptr2, "\t%s\n", "end");
         #endif // SPI
+        fclose(fptr1);
         return 0;
     } else {
         printf("Nenhuma string fornecida como argumento.\n");
