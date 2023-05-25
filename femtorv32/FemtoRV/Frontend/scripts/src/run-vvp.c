@@ -6,7 +6,7 @@
 
 void GenerateVVP();
 
-void Command(char *, char*, bool);
+void Command(char *, char*, char);
 
 static FILE * mode_file(char file[], char mode[]) {
     FILE *fptr;
@@ -34,17 +34,20 @@ int main()
 }
 
 
-void Command(char *directory_path, char *test, bool vcd) {
+void Command(char *directory_path, char *test, char cmd) {
     
+    const char* directory_path_base = "../../tests/base_testbench/"; 
     char command[100];
 
-    if (vcd) {
-        snprintf(command, sizeof(command), "(cd %s%s && iverilog %s_testbench.v)", directory_path, test,  test);
-    } else {
-        snprintf(command, sizeof(command), "(cd %s%s && vvp a.out)", directory_path, test);
+    if (cmd == 'v') {
+        snprintf(command, sizeof(command), "(cd %s && %s)", directory_path_base, "(iverilog testbench.v)");
+    } else if (cmd == 'x') {
+        snprintf(command, sizeof(command), "(cd %s && mv testbench_XD.vcd %s%s/)", directory_path_base, directory_path, test);
+    } else if (cmd == 'p') {
+            snprintf(command, sizeof(command), "(cd %s && %s)", directory_path_base, "vvp a.out");
     }
    
-   printf("comando **** : %s\n", command);
+    printf("comando : %s\n", command);
     int status = system(command);
 
     if (status != -1) {
@@ -107,11 +110,10 @@ void GenerateVVP() {
                     }
                 }
                 fclose(fptr2);
-                // Command(directory_path, entry->d_name, true);
-                // printf("xxxxxxxxxxxxx segundo comando\n");
-                // Command(directory_path, entry->d_name, false);
-                exit(1);
-                
+                Command("", "", 'v');
+                Command("", "", 'p');
+                Command(directory_path, entry->d_name, 'x');
+                // exit(1);
             }
         }
     }
