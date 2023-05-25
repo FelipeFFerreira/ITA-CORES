@@ -33,9 +33,10 @@ int main() {
 
     fprintf(stdout, "[%s] Preparando arquivos para formatação\n", __func__);
 
-
     MachineCodeTool();
 
+    GeneratSimulation();
+    
     return 0;
 }
 
@@ -64,7 +65,6 @@ void Command(char * scriptfilePath, char * Command, bool make)
     }
 }
 
-
 void MachineCodeTool() {
     const char* directory_path = "../../build/"; 
 
@@ -88,5 +88,10 @@ void MachineCodeTool() {
     }
 
     closedir(directory);
+}
 
+void GeneratSimulation()
+{
+    fprintf(stdout, "[%s] Preparando arquivos para simulação\n", __func__);
+    Command("", "./run-vvp", false);
 }
