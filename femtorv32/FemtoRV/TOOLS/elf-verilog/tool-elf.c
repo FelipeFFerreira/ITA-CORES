@@ -17,16 +17,16 @@ static FILE * mode_file(char file[], char mode[]) {
 int main(int argc, char *argv[])
 {
     int cnt = 0, i = 0;
-    char ch, byte[9], byte_verilog[9], file[26], file_destino[50], file_origem[50];
+    char ch, byte[9], byte_verilog[9], file[50], file_destino[50], file_origem[50];
     const char* directory_path = "../../build/"; 
 
     if (argc > 1) {
         char *string = argv[1];
 
-        printf("Formatando arquivo parao teste [%s]\n", string);
-        snprintf(file, sizeof(file), "%s%s/%s.hex", directory_path, argv[1], argv[1]);
+        snprintf(file, sizeof(file), "%s%s/%s.hex", directory_path, string, string);
+        printf("[ Formatando arquivo parao teste [%s]  | path: %s]\n", string, file);
         FILE* fptr1 = mode_file(file, "r");
-        sprintf(file_destino, "%s%s/%s_firmware.hex", directory_path, argv[1], argv[1]);
+        sprintf(file_destino, "%s%s/%s_firmware.hex", directory_path, string, string);
         FILE* fptr2 = mode_file(file_destino, "w");
         
         #ifdef SPI
