@@ -8,6 +8,8 @@ void GenerateVVP();
 
 void Command(char *, char*, char);
 
+void ResultTest(char *);
+
 static FILE * mode_file(char file[], char mode[]) {
     FILE *fptr;
     if( (fptr = fopen(file, mode)) == NULL) {
@@ -19,16 +21,6 @@ static FILE * mode_file(char file[], char mode[]) {
 
 int main()
 {
-  
-
-    //     system("cd ../testbench_tests && iverilog testbench.v");
-    //     char cmd[100];
-    //     sprintf(cmd, "cd ../testbench_tests && vvp a.out > ../%s/%s.vvp", test[i], test[i]);
-    //     system(cmd);
-    //     sprintf(cmd, "cd ../testbench_tests && cp testbench.vcd ../%s", test[i]);
-    //     system(cmd);
-
-    // }
     GenerateVVP();
     return 0;
 }
@@ -44,7 +36,9 @@ void Command(char *directory_path, char *test, char cmd) {
     } else if (cmd == 'x') {
         snprintf(command, sizeof(command), "(cd %s && mv testbench_XD.vcd %s%s/)", directory_path_base, directory_path, test);
     } else if (cmd == 'p') {
-            snprintf(command, sizeof(command), "(cd %s && %s)", directory_path_base, "vvp a.out");
+            snprintf(command, sizeof(command), "(cd %s && %s)", directory_path_base, "vvp a.out > output_vvp");
+    } else {
+            snprintf(command, sizeof(command), "(%s)",  "cd ../../tests/base_testbench/ && ./prog_avaliar");
     }
    
     printf("comando : %s\n", command);
@@ -113,10 +107,37 @@ void GenerateVVP() {
                 Command("", "", 'v');
                 Command("", "", 'p');
                 Command(directory_path, entry->d_name, 'x');
+                Command("", "", 'w');
+                ResultTest(entry->d_name);
                 // exit(1);
+
+                
             }
         }
     }
     closedir(directory);
+}
+
+void ResultTest(char * test) {
+
+    FILE *fptr1, *fptr2;
+    bool pass = false;
+
+    fptr1 = mode_file("../../tests/base_testbench/avaliar_test", "r");
     
+    char line[512];
+    while (fgets(line, sizeof(line), fptr1) != NULL) {
+        if (strstr(line, "OK") != NULL) {
+            fptr2 = mode_file("../../build/resultado_tests.txt", "a"); 
+            pass = true;  
+            break;  
+        }
+    }
+    if (pass)
+        fprintf(fptr2, "Teste [%s] - PASSOU\n", test);
+    else 
+        fprintf(fptr2, "Teste [%s] - FALHOU\n", test);
+
+    fclose(fptr1);
+    fclose(fptr2);
 }

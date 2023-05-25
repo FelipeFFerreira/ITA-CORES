@@ -3,12 +3,14 @@
 #include <dirent.h>
 #include <stdbool.h>
 #include <sys/types.h>
+#include <string.h>
 
 void Command(char *, char *, bool);
 
 void MachineCodeTool();
 
 void GeneratSimulation();
+
 
 int main() {
 

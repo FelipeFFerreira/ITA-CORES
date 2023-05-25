@@ -709,12 +709,19 @@ endmodule
 module testbench;
 
 	// Simulation time: 10000 * 1 us = 10 ms
-    localparam DURATION = 6000000;
+    localparam DURATION = 600000;
 
 	reg clk;
     reg reset,  reset_spi;
 	wire spi_mosi, spi_miso, spi_cs_n, spi_clk;
 	wire board_led;
+
+	reg [31:0] mem_ADDR;
+	reg [31:0] mem_WDATA;
+	reg [7:0] processed_mem_WDATA [0:31];
+	integer i;
+	integer processed_size;
+
 
 	flash_spi FLASH_SPI (clk, reset_spi, spi_mosi, spi_miso, spi_cs_n, spi_clk, board_led);
  
@@ -726,7 +733,18 @@ module testbench;
 		.spi_cs_n(spi_cs_n),
 		.spi_clk(spi_clk)
 	);
+	always @(posedge clk) begin
 
+		mem_WDATA <= ITA_CORE.mem_wdata;
+		$display("%c", mem_WDATA);
+ 		for (i = 0; i < 32; i = i + 1) begin
+    	if (mem_WDATA[i] >= 8'h41 && mem_WDATA[i] <= 8'h5A) begin
+        	$display("%c", mem_WDATA[i]);
+    end
+end
+
+
+	end
 	initial begin
 		reset_spi <=0;
 		#1;
