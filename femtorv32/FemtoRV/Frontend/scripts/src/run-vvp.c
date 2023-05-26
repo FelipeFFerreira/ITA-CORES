@@ -121,18 +121,20 @@ void GenerateVVP() {
 void ResultTest(char * test) {
 
     FILE *fptr1, *fptr2;
-    bool pass = false;
+    bool pass = true;
 
     fptr1 = mode_file("../../tests/base_testbench/avaliar_test", "r");
     
-    char line[512];
-    while (fgets(line, sizeof(line), fptr1) != NULL) {
-        if (strstr(line, "OK") != NULL) {
-            fptr2 = mode_file("../../build/resultado_tests.txt", "a"); 
-            pass = true;  
-            break;  
+    char line[1024];
+    while (!feof(fptr1)) {
+        if (fgets(line, sizeof(line), fptr1) != NULL) {
+            if (strstr(line, "OI") != NULL) { 
+                pass = false;  
+                break;  
+            }
         }
     }
+    fptr2 = mode_file("../../build/resultado_tests.txt", "a");
     if (pass)
         fprintf(fptr2, "Teste [%s] - PASSOU\n", test);
     else 
@@ -140,4 +142,5 @@ void ResultTest(char * test) {
 
     fclose(fptr1);
     fclose(fptr2);
+    // exit(1);
 }

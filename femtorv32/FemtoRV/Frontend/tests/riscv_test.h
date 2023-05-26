@@ -34,7 +34,6 @@ TEST_FUNC_NAME:				\
 	sw	a1,0(a2);
 
 #define RVTEST_PASS			\
-loop:					\
 	lui	a0,0x10000000>>12;	\
 	addi	a1,zero,'O';		\
 	addi	a2,zero,'K';		\
@@ -42,14 +41,14 @@ loop:					\
 	sb	a1,0(a0);		\
 	sb	a2,0(a0);		\
 	sb	a3,0(a0);		\
-	j loop;
 	//jal	zero,TEST_FUNC_RET;
 
 #define RVTEST_FAIL			\
+loop:					\
 	lui	a0,0x10000000>>12;	\
-	addi	a1,zero,'E';		\
-	addi	a2,zero,'R';		\
-	addi	a3,zero,'O';		\
+	addi	a1,zero,'O';		\
+	addi	a2,zero,'I';		\
+	addi	a3,zero,'I';		\
 	addi	a4,zero,'\n';		\
 	sw	a1,0(a0);		\
 	sw	a2,0(a0);		\
@@ -57,7 +56,8 @@ loop:					\
 	sw	a3,0(a0);		\
 	sw	a2,0(a0);		\
 	sw	a4,0(a0);		\
-	ebreak;
+j loop;
+	//ebreak;
 
 #define RVTEST_CODE_END
 #define RVTEST_DATA_BEGIN .balign 4;
