@@ -50,7 +50,7 @@ module flash_spi(
    	assign 				addr_dut = {rcv_data_dut[19:0]};
    	wire [31:0] 		mem2;
    	assign mem2 =  		(cnt_rcv != 0) ? 32'hzzzz : 
-   						{ MEM[addr_dut[9 - 1:2]] };
+   						{ MEM[addr_dut[17 - 1:2]] };
 
 	assign word_data_dut = {mem2[7:0], mem2[15:8], mem2[23:16], mem2[31:24]};
 	
@@ -89,7 +89,7 @@ module flash_spi(
 
 `ifdef SIMU_FLASH
 	initial
-		$readmemh("firmware-NEW_ADD.hex", MEM); 
+	$readmemh("../../build/xori/xori_firmware.hex", MEM);
 `else	
 
 	always @(posedge reset_spi) begin
@@ -709,7 +709,7 @@ endmodule
 module testbench;
 
 	// Simulation time: 10000 * 1 us = 10 ms
-    localparam DURATION = 400000;
+    localparam DURATION = 5000000;
 
 	reg clk;
     reg reset,  reset_spi;
@@ -736,10 +736,10 @@ module testbench;
 	always @(posedge clk) begin
 
 		mem_WDATA <= ITA_CORE.mem_wdata;
-		$display("%c", mem_WDATA);
+		$display(" ", mem_WDATA);
  		for (i = 0; i < 32; i = i + 1) begin
     	if (mem_WDATA[i] >= 8'h41 && mem_WDATA[i] <= 8'h5A) begin
-        	$display("%c", mem_WDATA[i]);
+        	$display("", mem_WDATA[i]);
     end
 end
 

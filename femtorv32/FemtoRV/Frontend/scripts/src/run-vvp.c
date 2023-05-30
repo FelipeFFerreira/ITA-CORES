@@ -68,7 +68,7 @@ void GenerateVVP() {
     char dir_at[50];
     int count = 0;
 
-    sprintf(dir_at, "%s%sfemtosoc.v", directory_path_base, "file_base/");
+    sprintf(dir_at, "%s%stestbench.v", directory_path_base, "file_base/");
     fptr1 = mode_file(dir_at, "r");
     while (!feof(fptr1)) {
         if (fgets(linha[count], 1000, fptr1)) {
@@ -91,12 +91,12 @@ void GenerateVVP() {
             
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
                 fprintf(stdout, "[%s] Gerando arquivos para simulação [%s]\n",  __func__, entry->d_name);
-                sprintf(dir_at, "%s%s", directory_path_base, "femtosoc.v");
+                sprintf(dir_at, "%s%s", directory_path_base, "testbench.v");
                 fptr2 = mode_file(dir_at, "w");
                 for (int j = 0; j < count; j++) {
                     char arq_hex[100];
                     if (strstr(linha[j], "hex.hex")) {
-                        sprintf(arq_hex, "\t$readmemh(\"%s%s/%s_firmware.hex\", RAM);\n", directory_path, entry->d_name, entry->d_name);
+                        sprintf(arq_hex, "\t$readmemh(\"%s%s/%s_firmware.hex\", MEM);\n", directory_path, entry->d_name, entry->d_name);
                         fprintf(fptr2, arq_hex);  
                     }
                     else {
