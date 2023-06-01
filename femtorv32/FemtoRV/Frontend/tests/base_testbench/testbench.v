@@ -709,42 +709,34 @@ endmodule
 module testbench;
 
 	// Simulation time: 10000 * 1 us = 10 ms
-    localparam DURATION = 5000000;
+    localparam DURATION = 4000000;
 
-	reg clk;
-    reg reset,  reset_spi;
-	wire spi_mosi, spi_miso, spi_cs_n, spi_clk;
+	reg clk, reset, reset_spi;
+	wire led, spi_mosi, spi_miso, spi_cs_n, spi_clk;
 	wire board_led;
 
-	reg [31:0] mem_ADDR;
-	reg [31:0] mem_WDATA;
-	reg [7:0] processed_mem_WDATA [0:31];
-	integer i;
-	integer processed_size;
+	reg [2:0] count = 0;
+    reg monitor_started = 0;
+    reg ok_written = 0;
+	reg [255:0] file = "output_test";
 
 
 	flash_spi FLASH_SPI (clk, reset_spi, spi_mosi, spi_miso, spi_cs_n, spi_clk, board_led);
  
     femtosoc ITA_CORE(
 		.RESET(reset),
+		.D1(led),
     	.clk(clk),
 		.spi_mosi(spi_mosi),
 		.spi_miso(spi_miso),
 		.spi_cs_n(spi_cs_n),
 		.spi_clk(spi_clk)
 	);
-	always @(posedge clk) begin
 
-		mem_WDATA <= ITA_CORE.mem_wdata;
-		$display(" ", mem_WDATA);
- 		for (i = 0; i < 32; i = i + 1) begin
-    	if (mem_WDATA[i] >= 8'h41 && mem_WDATA[i] <= 8'h5A) begin
-        	$display("", mem_WDATA[i]);
-    end
-end
-
-
+	initial begin
+		file = $fopen(file, "w");
 	end
+	
 	initial begin
 		reset_spi <=0;
 		#1;
@@ -764,10 +756,29 @@ end
         clk = ~clk;
     end
 
+     always @(posedge clk) begin
+        if (!monitor_started) begin
+            count <= count + 1;
+            if (count == 3) begin
+                monitor_started <= 1;
+                count <= 0;
+            end
+        end else begin
+            if (led && !ok_written) begin
+                $fdisplay(file, "OK\n");
+                ok_written <= 1;
+                monitor_started <= 0;
+            end
+        end
+    end
+
     initial begin
         $dumpfile("testbench_XD.vcd");
-		$dumpvars(0, testbench);
+        $dumpvars(0, testbench);
         #(DURATION)
+        if (!ok_written)
+            $fdisplay(file, "ERROR\n");
+        $fclose(file);
         $display("Finished!");
         $finish;
     end

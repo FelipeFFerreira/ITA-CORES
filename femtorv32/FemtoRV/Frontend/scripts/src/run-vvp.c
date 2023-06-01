@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <stdbool.h>
 #include <sys/types.h>
+#include <time.h>
 
 void GenerateVVP();
 
@@ -38,7 +39,7 @@ void Command(char *directory_path, char *test, char cmd) {
     } else if (cmd == 'p') {
             snprintf(command, sizeof(command), "(cd %s && %s)", directory_path_base, "vvp a.out > output_vvp");
     } else {
-            snprintf(command, sizeof(command), "(%s)",  "cd ../../tests/base_testbench/ && ./prog_avaliar");
+            // snprintf(command, sizeof(command), "(%s)",  "cd ../../tests/base_testbench/ && ./prog_avaliar");
     }
    
     printf("comando : %s\n", command);
@@ -107,7 +108,6 @@ void GenerateVVP() {
                 Command("", "", 'v');
                 Command("", "", 'p');
                 Command(directory_path, entry->d_name, 'x');
-                Command("", "", 'w');
                 ResultTest(entry->d_name);
                 // exit(1);
 
@@ -120,25 +120,31 @@ void GenerateVVP() {
 
 void ResultTest(char * test) {
 
+    time_t current_time;
+    time(&current_time);
+    struct tm* time_info = localtime(&current_time);
+    char time_str[20];
+    strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", time_info);
     FILE *fptr1, *fptr2;
+
     bool pass = true;
 
-    fptr1 = mode_file("../../tests/base_testbench/avaliar_test", "r");
+    fptr1 = mode_file("../../tests/base_testbench/output_test", "r");
     
-    char line[1024];
+    char line[100];
     while (!feof(fptr1)) {
         if (fgets(line, sizeof(line), fptr1) != NULL) {
-            if (strstr(line, "OI") != NULL) { 
+            if (strstr(line, "ERROR") != NULL) { 
                 pass = false;  
                 break;  
             }
         }
     }
-    fptr2 = mode_file("../../build/resultado_tests.txt", "a");
+    fptr2 = mode_file("../../build/resultado_tests.log", "a");
     if (pass)
-        fprintf(fptr2, "Teste [%s] - PASSOU\n", test);
+        fprintf(fptr2, "%s: TESTE [%s]\t\t\t ------- [PASSOU]\n", time_str, test);
     else 
-        fprintf(fptr2, "Teste [%s] - FALHOU\n", test);
+        fprintf(fptr2, "%s: TESTE [%s]\t\t\t ------- [FALHOU]\n", time_str, test);
 
     fclose(fptr1);
     fclose(fptr2);
