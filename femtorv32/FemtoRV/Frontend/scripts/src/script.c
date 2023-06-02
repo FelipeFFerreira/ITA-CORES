@@ -31,6 +31,8 @@ int main() {
 
     Command(scriptfilePath_scripts, "make run-tools-elf", true);
 
+    Command(scriptfilePath_scripts, "make run-tools-elf-flash", true);
+    
     Command(scriptfilePath_scripts, "make run-vvp", true);
 
     fprintf(stdout, "[%s] Preparando arquivos para formatação\n", __func__);
@@ -88,6 +90,8 @@ void MachineCodeTool() {
                 // printf("%s\n", entry->d_name);
                 char command[100];
                 snprintf(command, sizeof(command), "(./tool-elf %s)",  entry->d_name);
+                Command("", command, false);
+                snprintf(command, sizeof(command), "(./tool-elf-flash %s)",  entry->d_name);
                 Command("", command, false);
             }
         }
