@@ -38,7 +38,11 @@ int main() {
     MachineCodeTool();
 
     GeneratSimulation();
-    
+
+    fprintf(stdout, "[%s] Gerando arquivos binarios de cada teste\n", __func__);
+
+    Command(scriptfilePath_tooltchain, "make bin", true);
+
     return 0;
 }
 

@@ -12,6 +12,12 @@
 #define RVTEST_RV32U
 #define TESTNUM x28
 
+// #define s_1 100
+// #define s_05 50
+
+#define s_1 44444
+#define s_05 4938
+
 // 
 	// #define RVTEST_PASS                     \
 //     li      gp, IO_BASE;                \
@@ -26,7 +32,6 @@
   	sw t1, %lo(0x404000)(t0); 
 
 #define RVTEST_PASS			\
-loop_pass:					\
 	addi a0, zero, 100;   \
 	addi a1, zero, 'O';   \
 	addi a2, zero, 'K';   \
@@ -36,14 +41,27 @@ loop_pass:					\
 	sb a2, 0(a0);         \
 	addi a0, a0, 1;       \
 	sb a3, 0(a0);         \
-	lui t0, %hi(0x404000); \
-  	li t1, 4095; \
-  	sw t1, %lo(0x404000)(t0); \
+  	lui t0, %hi(0x404000);       \
+ 	li t1, 0;                    \
+  	sw t1, %lo(0x404000)(t0);     \
+  loop_pass:                        \
+    lui t0, %hi(0x404000);     \
+    li t1, 4095;               \
+    sw t1, %lo(0x404000)(t0);   \
+    li t2, s_1;               \
+    delay_pass:                     \
+      addi t2, t2, -1;         \
+      bnez t2, delay_pass;          \
+    lui t0, %hi(0x404000);     \
+    li t1, 0;                  \
+    sw t1, %lo(0x404000)(t0);   \
+    li t2, s_1;               \
+    delay2_pass:                    \
+      addi t2, t2, -1;         \
+      bnez t2, delay2_pass;         \
 	j loop_pass;
-	//jal	zero,TEST_FUNC_RET;
 
 #define RVTEST_FAIL			\
-loop_fail:					\
 	addi a0, zero, 100;   \
 	addi a1, zero, 'E';   \
 	addi a2, zero, 'R';   \
@@ -53,11 +71,25 @@ loop_fail:					\
 	sb a2, 0(a0);         \
 	addi a0, a0, 1;       \
 	sb a3, 0(a0);         \
-	lui t0, %hi(0x404000); \
-  	li t1, 0; \
-  	sw t1, %lo(0x404000)(t0); \
-j loop_fail;
-	//ebreak;
+  	lui t0, %hi(0x404000);       \
+ 	li t1, 0;                    \
+  	sw t1, %lo(0x404000)(t0);     \
+  loop_fail:                        \
+    lui t0, %hi(0x404000);     \
+    li t1, 4095;               \
+    sw t1, %lo(0x404000)(t0);   \
+    li t2, s_05;               \
+    delay_fail:                     \
+      addi t2, t2, -1;         \
+      bnez t2, delay_fail;          \
+    lui t0, %hi(0x404000);     \
+    li t1, 0;                  \
+    sw t1, %lo(0x404000)(t0);   \
+    li t2, s_05;               \
+    delay2_fail:                    \
+      addi t2, t2, -1;         \
+      bnez t2, delay2_fail;         \
+  j loop_fail;
 
 #define PUTCHAR \
 	putchar: \

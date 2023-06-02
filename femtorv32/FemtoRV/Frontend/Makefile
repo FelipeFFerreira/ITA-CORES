@@ -23,8 +23,15 @@ ELFS := $(patsubst tests/%.o,build/%.elf,$(TEST_OBJS))
 TEST_DIRS := $(wildcard build/*/)
 # Obter a lista de arquivos .elf em cada diretório de teste
 ELFS_BUILD := $(foreach dir,$(TEST_DIRS),$(wildcard $(dir)*.elf))
+# Obter a lista de arquivos .elf em cada diretório de teste
+# BIN_DIR := $(CURDIR)/bin_tests
+# BINARIES := $(patsubst build/%.elf,build/%.bin,$(ELFS_BUILD))
+# BINARIES_COPY := $(patsubst build/%.elf,$(BIN_DIR)/%.bin,$(ELFS_BUILD))
+BIN_DIR := $(CURDIR)/bin_tests
+BINARIES := $(patsubst build/%.elf,build/%.bin,$(ELFS_BUILD))
+BINARIES_COPY := $(patsubst build/%.elf,$(BIN_DIR)/%.bin,$(ELFS_BUILD))
 
-.PHONY: all riscv-formal
+.PHONY: all riscv-formal bin
 
 all: hex
 
@@ -49,13 +56,31 @@ build/%.elf: tests/%.o
 build/%.hex: build/%.elf
 	objcopy -O verilog $< $@
 
+# bin: $(BINARIES) $(BINARIES_COPY)
+
+# build/%.bin: build/%.elf
+# 	$(TOOLCHAIN_PREFIX)objcopy $< $@ -O binary
+
+# $(BIN_DIR)/%.bin: build/%.bin
+# 	@mkdir -p $(dir $@)
+# 	cp $< $@
+
+bin: $(BINARIES) $(BINARIES_COPY)
+
+build/%.bin: build/%.elf
+	$(TOOLCHAIN_PREFIX)objcopy $< $@ -O binary
+
+$(BIN_DIR)/%.bin: build/%.bin
+	@mkdir -p $(BIN_DIR)
+	cp $< $(BIN_DIR)
+
 
 clean:
 	rm -rf riscv-gnu-toolchain-riscv32i riscv-gnu-toolchain-riscv32ic \
 		riscv-gnu-toolchain-riscv32im riscv-gnu-toolchain-riscv32imc
-	rm -vrf $(FIRMWARE_OBJS) $(TEST_OBJS) check.smt2 check.vcd synth.v synth.log \
-		firmware/firmware.elf firmware/firmware.bin firmware/firmware.hex firmware/firmware.map \
-		testbench.vvp testbench_sp.vvp testbench_synth.vvp testbench_ez.vvp \
-		testbench_rvf.vvp testbench_wb.vvp testbench.vcd testbench.trace \
-		testbench_verilator testbench_verilator_dir
+	rm -vrf $(FIRMWARE_OBJS) $(TEST_OBJS) \
+		firmware/firmware.elf firmware/firmware.bin firmware/firmware.hex \
 	rm -rf build
+	rm -rf $(BIN_DIR)
+
+.PHONY: clean
