@@ -12,11 +12,14 @@
 #define RVTEST_RV32U
 #define TESTNUM x28
 
-// #define s_1 100
-// #define s_05 50
-
+#ifdef ENV_FRONTEND_SIGNOFF
+#define s_1 5
+#define s_05 2
+#else
 #define s_1 44444
 #define s_05 4938
+#endif
+
 
 // 
 	// #define RVTEST_PASS                     \

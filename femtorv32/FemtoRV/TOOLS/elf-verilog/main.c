@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define CORE
+#define SPI
 #define BYTE 8
 
 static FILE * mode_file(char file[], char mode[]) {

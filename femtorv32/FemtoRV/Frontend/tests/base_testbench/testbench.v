@@ -718,9 +718,10 @@ module testbench;
 	wire board_led;
 
 	reg [2:0] count = 0;
-    reg monitor_started = 0;
+    reg monitor_started = 0, monitor_finish = 0;
     reg ok_written = 0;
 	reg [255:0] file = "output_test";
+	integer count_led = 0;
 
 
 	flash_spi FLASH_SPI (clk, reset_spi, spi_mosi, spi_miso, spi_cs_n, spi_clk, board_led);
@@ -766,10 +767,14 @@ module testbench;
                 count <= 0;
             end
         end else begin
-            if (led && !ok_written) begin
-                $fdisplay(file, "OK\n");
-                ok_written <= 1;
-                monitor_started <= 0;
+            if (led && !monitor_finish) begin
+				count_led <= count_led + 1;
+                if (count_led >= 19000) begin
+					ok_written <= 1;
+					$fdisplay(file, "OK\n");
+					monitor_finish <= 1;
+				end
+                // monitor_started <= 0;
             end
         end
     end
