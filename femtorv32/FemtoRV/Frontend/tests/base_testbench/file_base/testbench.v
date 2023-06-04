@@ -709,8 +709,8 @@ endmodule
 module testbench;
 
 	// Simulation time: 10000 * 1 us = 10 ms
-    // localparam DURATION = 9000000;
-	localparam DURATION = 4000000;
+    // localparam DURATION = 4000000;
+	localparam DURATION = 40;
 
 
 	reg clk, reset, reset_spi;

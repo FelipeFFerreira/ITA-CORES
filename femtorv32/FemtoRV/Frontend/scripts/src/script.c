@@ -4,12 +4,15 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <string.h>
+#include <unistd.h>
 
 void Command(char *, char *, bool);
 
 void MachineCodeTool();
 
 void GeneratSimulation();
+
+void GeneratSimulationDevice();
 
 
 int main() {
@@ -44,6 +47,10 @@ int main() {
     fprintf(stdout, "[%s] Gerando arquivos binarios de cada teste\n", __func__);
 
     Command(scriptfilePath_tooltchain, "make bin", true);
+
+    fprintf(stdout, "[%s] Preparando simulações para o device\n", __func__);
+
+    GeneratSimulationDevice();
 
     return 0;
 }
@@ -104,4 +111,34 @@ void GeneratSimulation()
 {
     fprintf(stdout, "[%s] Preparando arquivos para simulação\n", __func__);
     Command("", "./run-vvp", false);
+}
+
+void GeneratSimulationDevice()
+{
+    const char* directory_path = "../../build/"; 
+
+    DIR* directory = opendir(directory_path);
+    if (directory == NULL) {
+        perror("Erro ao abrir o diretório");
+        return 1;
+    }
+
+    struct dirent* entry;
+
+    while ((entry = readdir(directory)) != NULL) {
+        if (entry->d_type == DT_DIR) {
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+                printf("[%s] Executando simulação do teste [%s] no Device:\n", __func__, entry->d_name);
+                char dir_path[100], command[100];
+                snprintf(dir_path, sizeof(dir_path), "%s%s", directory_path, entry->d_name);
+                snprintf(command, sizeof(command), "sudo icesprog -w -o 0x00020000 %s.bin", entry->d_name);
+                printf("path: %s | comando: %s\n", dir_path, command);
+                Command(dir_path, command, true);
+                printf("Aguardando ...\n");
+                sleep(5);
+            }
+        }
+    }
+
+    closedir(directory);
 }
