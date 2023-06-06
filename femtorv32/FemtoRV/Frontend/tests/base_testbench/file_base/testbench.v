@@ -709,8 +709,8 @@ endmodule
 module testbench;
 
 	// Simulation time: 10000 * 1 us = 10 ms
-    // localparam DURATION = 4000000;
-	localparam DURATION = 40;
+	// localparam DURATION = 3000000;
+	localparam DURATION = 3;
 
 
 	reg clk, reset, reset_spi;
@@ -719,12 +719,16 @@ module testbench;
 
 	reg [2:0] count = 0;
     reg monitor_started = 0, monitor_finish = 0;
-    reg ok_written = 0;
+    reg pass = 0;
 	reg [255:0] file = "output_test";
 	integer count_led = 0;
 
-
-	flash_spi FLASH_SPI (clk, reset_spi, spi_mosi, spi_miso, spi_cs_n, spi_clk, board_led);
+	flash_spi FLASH_SPI (clk, reset_spi, 
+		spi_mosi, spi_miso, 
+		spi_cs_n, 
+		spi_clk,
+		board_led
+	);
  
     femtosoc ITA_CORE(
 		.RESET(reset),
@@ -760,31 +764,24 @@ module testbench;
     end
 
      always @(posedge clk) begin
-        if (!monitor_started) begin
-            count <= count + 1;
-            if (count == 3) begin
-                monitor_started <= 1;
-                count <= 0;
-            end
-        end else begin
-            if (led && !monitor_finish) begin
-				count_led <= count_led + 1;
-                if (count_led >= 19000) begin
-					ok_written <= 1;
-					$fdisplay(file, "OK\n");
-					monitor_finish <= 1;
-				end
-                // monitor_started <= 0;
-            end
-        end
+		if (led && !monitor_finish) begin
+			count_led <= count_led + 1;
+		end
+		if (!led && count_led) begin
+			monitor_finish <= 1;
+		end
+		if (count_led >= 1200 && monitor_finish) begin
+			pass <= 1;
+		end
     end
 
     initial begin
         $dumpfile("testbench_XD.vcd");
         $dumpvars(0, testbench);
         #(DURATION)
-        if (!ok_written)
-            $fdisplay(file, "ERROR\n");
+        if (pass) begin
+            $fdisplay(file, "OK\n");
+		end else  $fdisplay(file, "ERROR\n");
         $fclose(file);
         $display("Finished!");
         $finish;

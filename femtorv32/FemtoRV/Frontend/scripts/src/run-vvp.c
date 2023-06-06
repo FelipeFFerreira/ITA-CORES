@@ -142,9 +142,9 @@ void ResultTest(char * test) {
     }
     fptr2 = mode_file("../../build/resultado_tests.log", "a");
     if (pass)
-        fprintf(fptr2, "%s: TESTE [%s]\t\t\t ------- [PASSOU]\n", time_str, test);
+        fprintf(fptr2, "%s: TESTE [%s]\t\t\t\t ------- [PASSOU]\n", time_str, test);
     else 
-        fprintf(fptr2, "%s: TESTE [%s]\t\t\t ------- [FALHOU]\n", time_str, test);
+        fprintf(fptr2, "%s: TESTE [%s]\t\t\t\t ------- [FALHOU]\n", time_str, test);
 
     fclose(fptr1);
     fclose(fptr2);

@@ -6,6 +6,8 @@
 #include <string.h>
 #include <unistd.h>
 
+// #define ENV_FRONTEND_SIGNOFF
+
 void Command(char *, char *, bool);
 
 void MachineCodeTool();
@@ -48,9 +50,11 @@ int main() {
 
     Command(scriptfilePath_tooltchain, "make bin", true);
 
+#ifndef ENV_FRONTEND_SIGNOFF
     fprintf(stdout, "[%s] Preparando simulações para o device\n", __func__);
 
     GeneratSimulationDevice();
+#endif
 
     return 0;
 }

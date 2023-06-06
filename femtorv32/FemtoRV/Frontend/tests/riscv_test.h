@@ -1,7 +1,7 @@
 #ifndef _ENV_ITA_CORES_QUARK_TEST_H
 #define _ENV_ITA_CORES_QUARK_TEST_H
 
-// # define ENV_FRONTEND_SIGNOFF
+// #define ENV_FRONTEND_SIGNOFF
 
 #ifndef TEST_FUNC_NAME
 #  define TEST_FUNC_NAME mytest
@@ -12,12 +12,12 @@
 #define RVTEST_RV32U
 #define TESTNUM x28
 
-#ifdef ENV_FRONTEND_SIGNOFF
-#define s_1 5
-#define s_05 2
-#else
+#ifndef ENV_FRONTEND_SIGNOFF
 #define s_1 44444
 #define s_05 4938
+#else
+#define s_1 7
+#define s_05 1
 #endif
 
 
