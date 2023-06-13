@@ -16,9 +16,9 @@ GCC_WARNS += -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -pedanti
 TOOLCHAIN_PREFIX = $(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX)/bin/riscv64-unknown-elf-
 COMPRESSED_ISA = C
 
-TEST_OBJS = $(addsuffix .o,$(basename $(wildcard tests/*.S)))
-OBJECTS := $(wildcard tests/*.o)
-ELFS := $(patsubst tests/%.o,build/%.elf,$(TEST_OBJS))
+TEST_OBJS = $(addsuffix .o,$(basename $(wildcard riscv-tests/*.S)))
+OBJECTS := $(wildcard riscv-tests/*.o)
+ELFS := $(patsubst riscv-tests/%.o,build/%.elf,$(TEST_OBJS))
 # Obter a lista de diretórios de teste dentro de build
 TEST_DIRS := $(wildcard build/*/)
 # Obter a lista de arquivos .elf em cada diretório de teste
@@ -35,20 +35,20 @@ BINARIES_COPY := $(patsubst build/%.elf,$(BIN_DIR)/%.bin,$(ELFS_BUILD))
 
 all: hex
 
-riscv-formal: tests hex
+riscv-formal: riscv-tests hex
 
 hex: $(patsubst build/%.elf,build/%.hex,$(ELFS_BUILD))
 
 firmware/start.o: firmware/start.S
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im$(subst C,c,$(COMPRESSED_ISA)) -o $@ $<
 
-tests/%.o: tests/%.S tests/riscv_test.h tests/test_macros.h
+riscv-tests/%.o: riscv-tests/%.S riscv-tests/riscv_test.h riscv-tests/test_macros.h
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) \
 		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
 
-tests: $(FIRMWARE_OBJS) $(TEST_OBJS) $(ELFS)
+riscv-tests: $(FIRMWARE_OBJS) $(TEST_OBJS) $(ELFS)
 
-build/%.elf: tests/%.o
+build/%.elf: riscv-tests/%.o
 	mkdir -p $(basename $@)  # Cria uma pasta com o mesmo nome do arquivo .elf
 	$(TOOLCHAIN_PREFIX)ld -T spiflash0.ld -m elf32lriscv -nostdlib -norelax $< -o $@
 	mv $@ $(basename $@)/$(notdir $@)  # Move o arquivo .elf para a pasta correspondente

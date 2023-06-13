@@ -29,7 +29,7 @@ int main()
 
 void Command(char *directory_path, char *test, char cmd) {
     
-    const char* directory_path_base = "../../tests/base_testbench/"; 
+    const char* directory_path_base = "../../riscv-tests/base_testbench/"; 
     char command[100];
 
     if (cmd == 'v') {
@@ -39,7 +39,7 @@ void Command(char *directory_path, char *test, char cmd) {
     } else if (cmd == 'p') {
             snprintf(command, sizeof(command), "(cd %s && %s)", directory_path_base, "vvp a.out > output_vvp");
     } else {
-            // snprintf(command, sizeof(command), "(%s)",  "cd ../../tests/base_testbench/ && ./prog_avaliar");
+            // snprintf(command, sizeof(command), "(%s)",  "cd ../../riscv-tests/base_testbench/ && ./prog_avaliar");
     }
    
     printf("comando : %s\n", command);
@@ -56,15 +56,13 @@ void Command(char *directory_path, char *test, char cmd) {
     } else {
         printf("Erro ao executar o comando 'make programa'.\n");
     }
-    
-    //sprintf(cmd, "cd ../testbench_tests && cp testbench.vcd ../%s", test[i]);
 }
 
 void GenerateVVP() {
     FILE * fptr1, * fptr2;
     char linha[2000][2000], path_file_output[80];
     const char* directory_path = "../../build/"; 
-    const char* directory_path_base = "../../tests/base_testbench/"; 
+    const char* directory_path_base = "../../riscv-tests/base_testbench/"; 
     char path_testbench;
     char dir_at[50];
     int count = 0;
@@ -109,9 +107,6 @@ void GenerateVVP() {
                 Command("", "", 'p');
                 Command(directory_path, entry->d_name, 'x');
                 ResultTest(entry->d_name);
-                // exit(1);
-
-                
             }
         }
     }
@@ -129,7 +124,7 @@ void ResultTest(char * test) {
 
     bool pass = true;
 
-    fptr1 = mode_file("../../tests/base_testbench/output_test", "r");
+    fptr1 = mode_file("../../riscv-tests/base_testbench/output_test", "r");
     
     char line[100];
     while (!feof(fptr1)) {
@@ -148,5 +143,4 @@ void ResultTest(char * test) {
 
     fclose(fptr1);
     fclose(fptr2);
-    // exit(1);
 }

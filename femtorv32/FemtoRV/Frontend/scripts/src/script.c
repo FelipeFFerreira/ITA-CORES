@@ -27,7 +27,7 @@ int main() {
 
     Command(scriptfilePath_tooltchain, "make clean", true);
 
-    Command(scriptfilePath_tooltchain, "make riscv-formal", true);
+    Command(scriptfilePath_tooltchain, "make riscv-tests", true);
     
     Command(scriptfilePath_tooltchain, "make hex", true);
 
