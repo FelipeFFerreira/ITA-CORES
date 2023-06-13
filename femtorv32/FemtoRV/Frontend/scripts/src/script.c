@@ -23,9 +23,14 @@ int main() {
     char* scriptfilePath_scripts = "../";
 
     // Automating TOOLCHAIN-RISC-V
-    fprintf(stdout, "[%s] Processando arquivos para compilação\n", __func__);
 
     Command(scriptfilePath_tooltchain, "make clean", true);
+
+    fprintf(stdout, "[%s] Fazendo a instalação da TOOLCHAIN-RISCV-32b\n", __func__);
+
+    Command(scriptfilePath_tooltchain, "make toolchain", true);
+
+    fprintf(stdout, "[%s] Processando arquivos para compilação\n", __func__);
 
     Command(scriptfilePath_tooltchain, "make riscv-tests", true);
     
