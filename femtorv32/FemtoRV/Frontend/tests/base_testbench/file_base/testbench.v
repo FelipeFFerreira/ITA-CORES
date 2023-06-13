@@ -710,7 +710,7 @@ module testbench;
 
 	// Simulation time: 10000 * 1 us = 10 ms
 	// localparam DURATION = 3000000;
-	localparam DURATION = 3;
+	localparam DURATION = 3000000;
 
 
 	reg clk, reset, reset_spi;

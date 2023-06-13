@@ -6,7 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 
-// #define ENV_FRONTEND_SIGNOFF
+#define ENV_FRONTEND_SIGNOFF
 
 void Command(char *, char *, bool);
 

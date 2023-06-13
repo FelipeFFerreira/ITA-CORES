@@ -1,7 +1,7 @@
 #ifndef _ENV_ITA_CORES_QUARK_TEST_H
 #define _ENV_ITA_CORES_QUARK_TEST_H
 
-// #define ENV_FRONTEND_SIGNOFF
+#define ENV_FRONTEND_SIGNOFF
 
 #ifndef TEST_FUNC_NAME
 #  define TEST_FUNC_NAME mytest

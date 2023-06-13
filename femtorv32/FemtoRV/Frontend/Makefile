@@ -1,5 +1,5 @@
-RISCV_GNU_TOOLCHAIN_GIT_REVISION = 411d134
-RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX = /opt/riscv32
+# RISCV_GNU_TOOLCHAIN_GIT_REVISION = 411d134
+RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX = ../FIRMWARE/TOOLCHAIN/riscv64-unknown-elf-gcc-8.3.0-2020.04.0-x86_64-linux-ubuntu14
 
 # Give the user some easy overrides for local configuration quirks.
 # If you change one of these and it breaks, then you get to keep both pieces.
@@ -13,7 +13,7 @@ VVP = vvp$(ICARUS_SUFFIX)
 FIRMWARE_OBJS = firmware/start.o 
 GCC_WARNS  = -Werror -Wall -Wextra -Wshadow -Wundef -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings
 GCC_WARNS += -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -pedantic # -Wconversion
-TOOLCHAIN_PREFIX = $(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX)i/bin/riscv32-unknown-elf-
+TOOLCHAIN_PREFIX = $(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX)/bin/riscv64-unknown-elf-
 COMPRESSED_ISA = C
 
 TEST_OBJS = $(addsuffix .o,$(basename $(wildcard tests/*.S)))
