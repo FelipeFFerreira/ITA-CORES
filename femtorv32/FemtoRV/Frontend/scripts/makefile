@@ -1,5 +1,10 @@
 # all: clean make-all run-hex run-test run-dump run-script run-vvp run
-all: run-script run
+BIN_DIR := $(CURDIR)/bin
+
+all: clean_bin mkdir_bin run-script run
+
+mkdir_bin:
+	mkdir -p $(BIN_DIR)
 
 run: 
 	cd bin/ && ./run-script
@@ -27,6 +32,9 @@ run-script: script.o
 
 script.o: src/script.c
 	gcc -c src/script.c	
+
+clean_bin:
+	-rm -rf $(BIN_DIR)
 
 clean:
 	rm -f *.s *.o *~ bin/make-all bin/run-hex bin/run-test bin/run-dump bin/run-script
