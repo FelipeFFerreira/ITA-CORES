@@ -26,6 +26,12 @@ BIN_DIR := $(CURDIR)/bin_tests
 BINARIES := $(patsubst build/%.elf,build/%.bin,$(ELFS_BUILD))
 BINARIES_COPY := $(patsubst build/%.elf,$(BIN_DIR)/%.bin,$(ELFS_BUILD))
 
+CFLAGS =
+
+ifdef ENV_FRONTEND_SIGNOFF
+    CFLAGS += -DENV_FRONTEND_SIGNOFF=$(ENV_FRONTEND_SIGNOFF)
+endif
+
 .PHONY: all riscv-formal bin
 
 toolchain:
@@ -49,7 +55,7 @@ firmware/start.o: firmware/start.S
 
 riscv-tests/%.o: riscv-tests/%.S riscv-tests/riscv_test.h riscv-tests/test_macros.h
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) \
-		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
+		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
 
 riscv-tests: $(FIRMWARE_OBJS) $(TEST_OBJS) $(ELFS)
 

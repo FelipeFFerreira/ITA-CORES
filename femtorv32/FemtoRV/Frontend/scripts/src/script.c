@@ -6,7 +6,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#define ENV_FRONTEND_SIGNOFF
+#ifndef ENV_FRONTEND_SIGNOFF
+    #define ENV_FRONTEND_SIGNOFF false
+#endif
 
 void Command(char *, char *, bool);
 
@@ -32,10 +34,16 @@ int main() {
 
     fprintf(stdout, "[%s] Processando arquivos para compilação\n", __func__);
 
-    Command(scriptfilePath_tooltchain, "make riscv-tests", true);
-    
+    Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1", true);
+
+    // Command(scriptfilePath_tooltchain, "make riscv-tests", true);
+
+
+    // exit(5);
+
     Command(scriptfilePath_tooltchain, "make hex", true);
 
+    
     // Automating Tools
     fprintf(stdout, "[%s] Compilando ferramentas\n", __func__);
 
@@ -55,11 +63,12 @@ int main() {
 
     Command(scriptfilePath_tooltchain, "make bin", true);
 
-#ifndef ENV_FRONTEND_SIGNOFF
-    fprintf(stdout, "[%s] Preparando simulações para o device\n", __func__);
-
-    GeneratSimulationDevice();
-#endif
+//  #ifdef ENV_FRONTEND_SIGNOFF
+//         if (ENV_FRONTEND_SIGNOFF == true) {
+//             fprintf(stdout, "[%s] Preparando simulações para o device\n", __func__);
+//             GeneratSimulationDevice();
+//         }
+// #endif
 
     return 0;
 }
