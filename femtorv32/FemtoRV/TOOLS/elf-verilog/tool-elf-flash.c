@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     int count = 0;
     char file[50], file_destino[50], file_origem[50], linha[2000][2000], linha_h[1000];
     const char* directory_path = "../../build/"; 
-    const char* directory_path_file_base = "../../../RTL/test_spi/flash_spi.v";
+    const char* directory_path_file_base = "../../../RTL/spi_interface/flash_spi.v";
 
     if (argc > 1) {
         char *string = argv[1];
