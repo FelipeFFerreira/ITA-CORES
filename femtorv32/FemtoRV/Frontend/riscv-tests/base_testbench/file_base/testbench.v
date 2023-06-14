@@ -709,7 +709,6 @@ endmodule
 module testbench;
 
 	// Simulation time: 10000 * 1 us = 10 ms
-	// localparam DURATION = 3000000;
 	localparam DURATION = 3000000;
 
 

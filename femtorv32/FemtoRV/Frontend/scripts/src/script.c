@@ -6,9 +6,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifndef ENV_FRONTEND_SIGNOFF
-    #define ENV_FRONTEND_SIGNOFF false
-#endif
 
 void Command(char *, char *, bool);
 
@@ -21,6 +18,12 @@ void GeneratSimulationDevice();
 
 int main() {
 
+#ifdef ENV_FRONTEND_SIGNOFF
+    fprintf(stdout, "[%s] Ambiente Para [SIMULAÇÃO] Configurado\n", __func__);
+#else
+    fprintf(stdout, "[%s] Ambiente Para [DEVICE] Configurado\n", __func__);
+#endif
+
     char* scriptfilePath_tooltchain = "../../";
     char* scriptfilePath_scripts = "../";
 
@@ -28,22 +31,21 @@ int main() {
 
     Command(scriptfilePath_tooltchain, "make clean", true);
 
-    fprintf(stdout, "[%s] Fazendo a instalação da TOOLCHAIN-RISCV-32b\n", __func__);
+    fprintf(stdout, "[%s] Fazendo a instalação da TOOLCHAIN-RISCV - 32 bits\n", __func__);
 
     Command(scriptfilePath_tooltchain, "make toolchain", true);
 
     fprintf(stdout, "[%s] Processando arquivos para compilação\n", __func__);
 
-    Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1", true);
+#ifdef ENV_FRONTEND_SIGNOFF
+        Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1", true);
+#else
+        Command(scriptfilePath_tooltchain, "make riscv-tests", true);
 
-    // Command(scriptfilePath_tooltchain, "make riscv-tests", true);
-
-
-    // exit(5);
+#endif
 
     Command(scriptfilePath_tooltchain, "make hex", true);
 
-    
     // Automating Tools
     fprintf(stdout, "[%s] Compilando ferramentas\n", __func__);
 
@@ -56,19 +58,19 @@ int main() {
     fprintf(stdout, "[%s] Preparando arquivos para formatação\n", __func__);
 
     MachineCodeTool();
-
+    
+#ifdef ENV_FRONTEND_SIGNOFF
     GeneratSimulation();
+#endif
 
     fprintf(stdout, "[%s] Gerando arquivos binarios de cada teste\n", __func__);
 
     Command(scriptfilePath_tooltchain, "make bin", true);
 
-//  #ifdef ENV_FRONTEND_SIGNOFF
-//         if (ENV_FRONTEND_SIGNOFF == true) {
-//             fprintf(stdout, "[%s] Preparando simulações para o device\n", __func__);
-//             GeneratSimulationDevice();
-//         }
-// #endif
+#ifndef ENV_FRONTEND_SIGNOFF
+    fprintf(stdout, "[%s] Preparando simulações para o device\n", __func__);
+    GeneratSimulationDevice(); 
+#endif
 
     return 0;
 }

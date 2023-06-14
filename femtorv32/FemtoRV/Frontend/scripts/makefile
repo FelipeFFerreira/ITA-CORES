@@ -1,7 +1,13 @@
 # all: clean make-all run-hex run-test run-dump run-script run-vvp run
+CFLAGS =
+
+ifdef ENV_FRONTEND_SIGNOFF
+    CFLAGS += -D ENV_FRONTEND_SIGNOFF=$(ENV_FRONTEND_SIGNOFF)
+endif
+
 BIN_DIR := $(CURDIR)/bin
 
-all: clean_bin mkdir_bin run-script run
+all: clean clean_bin mkdir_bin run-script run
 
 mkdir_bin:
 	mkdir -p $(BIN_DIR)
@@ -13,7 +19,7 @@ run-vvp: run-vvp.o
 	gcc -o bin/run-vvp run-vvp.o
 
 run-vvp.o: src/run-vvp.c
-	gcc -c src/run-vvp.c
+	gcc -c src/run-vvp.c $(CFLAGS)
 
 run-tools-elf: tool-elf.o
 	gcc -o bin/tool-elf tool-elf.o
@@ -31,7 +37,7 @@ run-script: script.o
 	gcc -o bin/run-script script.o
 
 script.o: src/script.c
-	gcc -c src/script.c	
+	gcc -c src/script.c	$(CFLAGS)
 
 clean_bin:
 	-rm -rf $(BIN_DIR)
