@@ -4,12 +4,15 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <time.h>
+#include <string.h>
+#include <unistd.h>
 
-void GenerateVVP();
 
-void Command(char *, char*, char);
+void GenerateVVP(char *);
 
-void ResultTest(char *);
+void Command(char *, char*, char, char *);
+
+void ResultTest(char *, char *);
 
 static FILE * mode_file(char file[], char mode[]) {
     FILE *fptr;
@@ -20,16 +23,22 @@ static FILE * mode_file(char file[], char mode[]) {
     return fptr;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    GenerateVVP();
+    if (argc > 1) {
+        char *string = argv[1];
+        GenerateVVP(string);
+    } else 
+        exit(10);
+
     return 0;
 }
 
-
-void Command(char *directory_path, char *test, char cmd) {
+void Command(char *directory_path, char *test, char cmd, char *string) {
     
-    const char* directory_path_base = "../../riscv-tests/base_testbench/"; 
+    char* directory_path_base[200];
+    snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/", string);
+
     char command[100];
 
     if (cmd == 'v') {
@@ -39,7 +48,6 @@ void Command(char *directory_path, char *test, char cmd) {
     } else if (cmd == 'p') {
             snprintf(command, sizeof(command), "(cd %s && %s)", directory_path_base, "vvp a.out > output_vvp");
     } else {
-            // snprintf(command, sizeof(command), "(%s)",  "cd ../../riscv-tests/base_testbench/ && ./prog_avaliar");
     }
    
     printf("comando : %s\n", command);
@@ -58,15 +66,21 @@ void Command(char *directory_path, char *test, char cmd) {
     }
 }
 
-void GenerateVVP() {
+void GenerateVVP(char * string) {
     FILE * fptr1, * fptr2;
     char linha[2000][2000], path_file_output[80];
-    const char* directory_path = "../../build/"; 
-    const char* directory_path_base = "../../riscv-tests/base_testbench/"; 
+    char* directory_path = "../../build/"; 
+    char* directory_path_base[200];
     char path_testbench;
     char dir_at[50];
     int count = 0;
 
+    if (strstr(string, "riscv-tests"))
+    {
+        snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/", string);
+        printf(">> Genarete Test [%s]\n", string);
+
+    }
     sprintf(dir_at, "%s%stestbench.v", directory_path_base, "file_base/");
     fptr1 = mode_file(dir_at, "r");
     while (!feof(fptr1)) {
@@ -103,17 +117,17 @@ void GenerateVVP() {
                     }
                 }
                 fclose(fptr2);
-                Command("", "", 'v');
-                Command("", "", 'p');
-                Command(directory_path, entry->d_name, 'x');
-                ResultTest(entry->d_name);
+                Command("", "", 'v', string);
+                Command("", "", 'p', string);
+                Command(directory_path, entry->d_name, 'x', string);
+                ResultTest(entry->d_name, string);
             }
         }
     }
     closedir(directory);
 }
 
-void ResultTest(char * test) {
+void ResultTest(char * test, char *string) {
 
     time_t current_time;
     time(&current_time);
@@ -121,10 +135,11 @@ void ResultTest(char * test) {
     char time_str[20];
     strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", time_info);
     FILE *fptr1, *fptr2;
-
+    char *directory_path_base[200];
     bool pass = true;
-
-    fptr1 = mode_file("../../riscv-tests/base_testbench/output_test", "r");
+    
+    snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/output_test", string);
+    fptr1 = mode_file(directory_path_base, "r");
     
     char line[100];
     while (!feof(fptr1)) {

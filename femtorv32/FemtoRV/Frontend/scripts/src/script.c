@@ -180,7 +180,7 @@ void MachineCodeTool() {
 void GeneratSimulation()
 {
     fprintf(stdout, "[%s] Preparando arquivos para simulação\n", __func__);
-    Command("", "./run-vvp", false);
+    Command("", "./run-vvp riscv-tests", false);
 }
 
 void GeneratSimulationDevice()
