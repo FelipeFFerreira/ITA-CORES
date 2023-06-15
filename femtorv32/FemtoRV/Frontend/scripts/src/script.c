@@ -15,6 +15,7 @@ void GeneratSimulation();
 
 void GeneratSimulationDevice();
 
+void displayTests();
 
 int main() {
 
@@ -38,9 +39,11 @@ int main() {
     fprintf(stdout, "[%s] Processando arquivos para compilação\n", __func__);
 
 #ifdef ENV_FRONTEND_SIGNOFF
-        Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1", true);
+        // Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1 RISCV_TESTS=1", true);
+        Command(scriptfilePath_tooltchain, "make riscv-test-suite ENV_FRONTEND_SIGNOFF=1 RISCV_TEST_SUITE=1", true);
 #else
-        Command(scriptfilePath_tooltchain, "make riscv-tests", true);
+        // Command(scriptfilePath_tooltchain, "make riscv-tests RISCV_TESTS=1", true);
+        Command(scriptfilePath_tooltchain, "make riscv-test-suite RISCV_TEST_SUITE=1", true);
 
 #endif
 
@@ -161,4 +164,13 @@ void GeneratSimulationDevice()
     }
 
     closedir(directory);
+}
+
+void displayTests() {
+    printf("\nDisplaying Testing options:\n");
+    printf("1. Compliance Tests [riscv.org]\n");
+    printf("2. RISC-V TEST SUITE [lowRISCV]\n");
+    printf("3. Unit Tests\n");
+    printf("4. Peripheral tests\n");
+    printf("\nEscolha uma opção: ");
 }
