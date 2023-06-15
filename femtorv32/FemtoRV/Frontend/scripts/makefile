@@ -33,10 +33,10 @@ tool-elf.o: ../../TOOLS/elf-verilog/tool-elf.c
 tool-elf-flash.o: ../../TOOLS/elf-verilog/tool-elf-flash.c
 	gcc -c ../../TOOLS/elf-verilog/tool-elf-flash.c
 
-run-script: script.o
+run-script: script.o src/script.h
 	gcc -o bin/run-script script.o
 
-script.o: src/script.c
+script.o: src/script.c src/script.h
 	gcc -c src/script.c	$(CFLAGS)
 
 clean_bin:

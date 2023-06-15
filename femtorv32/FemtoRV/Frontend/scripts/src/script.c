@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <unistd.h>
-
+#include "script.h"
 
 void Command(char *, char *, bool);
 
@@ -15,42 +15,89 @@ void GeneratSimulation();
 
 void GeneratSimulationDevice();
 
-void displayTests();
+int DisplayLoad(char * opcao[NUM_OP]);
+
+int Display();
 
 int main() {
 
 #ifdef ENV_FRONTEND_SIGNOFF
-    fprintf(stdout, "[%s] Ambiente Para [SIMULAÇÃO] Configurado\n", __func__);
+    fprintf(stdout, "[%s] \nEnvironment For [SIMULATION] Configured\n", __func__);
 #else
-    fprintf(stdout, "[%s] Ambiente Para [DEVICE] Configurado\n", __func__);
+    fprintf(stdout, "[%s] \nEnvironment For [DEVICE] Configured\n", __func__);
 #endif
 
     char* scriptfilePath_tooltchain = "../../";
     char* scriptfilePath_scripts = "../";
 
+    int op = Display();
+
     // Automating TOOLCHAIN-RISC-V
 
     Command(scriptfilePath_tooltchain, "make clean", true);
 
-    fprintf(stdout, "[%s] Fazendo a instalação da TOOLCHAIN-RISCV - 32 bits\n", __func__);
+    fprintf(stdout, "[%s] Installing TOOLCHAIN-RISCV - 32 bits\n", __func__);
 
     Command(scriptfilePath_tooltchain, "make toolchain", true);
 
-    fprintf(stdout, "[%s] Processando arquivos para compilação\n", __func__);
+    fprintf(stdout, "[%s] Processing Files For Compilation\n", __func__);
 
 #ifdef ENV_FRONTEND_SIGNOFF
-        // Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1 RISCV_TESTS=1", true);
-        Command(scriptfilePath_tooltchain, "make riscv-test-suite ENV_FRONTEND_SIGNOFF=1 RISCV_TEST_SUITE=1", true);
-#else
-        // Command(scriptfilePath_tooltchain, "make riscv-tests RISCV_TESTS=1", true);
-        Command(scriptfilePath_tooltchain, "make riscv-test-suite RISCV_TEST_SUITE=1", true);
+        switch (op) {
 
+        case COMPLIANCE_RISCV_ORG:
+            printf(">>COMPLIANCE_RISCV_ORG\n");
+            Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1 RISCV_TESTS=1 ", true);
+            break;
+        
+        case RISCV_SUITE_LOWRISCV:
+            printf(">>RISCV_SUITE_LOWRISCV\n");
+            Command(scriptfilePath_tooltchain, "make riscv-test-suite ENV_FRONTEND_SIGNOFF=1 RISCV_TEST_SUITE=1", true);
+            break;
+
+        case UNIT_TESTS:
+            printf(">>UNIT_TESTS\n");
+            break;
+
+        case PERIPHERAL:
+            printf(">>PERIPHERAL\n");
+            break;
+        
+         default:
+            printf( ">>Only the tools have been installed. Operation Canceled, because the informed test repository is invalid.\n!" );
+            exit(10);
+        } 
+#else
+        switch (op) {
+
+        case COMPLIANCE_RISCV_ORG:
+            printf(">>COMPLIANCE_RISCV_ORG\n");
+            Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1 RISCV_TESTS=1 ", true);
+            break;
+        
+        case RISCV_SUITE_LOWRISCV:
+            printf(">>RISCV_SUITE_LOWRISCV\n");
+            Command(scriptfilePath_tooltchain, "make riscv-test-suite ENV_FRONTEND_SIGNOFF=1 RISCV_TEST_SUITE=1", true);
+            break;
+        
+        case UNIT_TESTS:
+            printf(">>UNIT_TESTS\n");
+            break;
+
+        case PERIPHERAL:
+            printf(">>PERIPHERAL\n");
+            break;
+        
+         default:
+            printf( ">>Only the tools have been installed. Operation Canceled, because the informed test repository is invalid.\n!" );
+            exit(10);
+        } 
 #endif
 
     Command(scriptfilePath_tooltchain, "make hex", true);
 
     // Automating Tools
-    fprintf(stdout, "[%s] Compilando ferramentas\n", __func__);
+    fprintf(stdout, "[%s] Compiling tools\n", __func__);
 
     Command(scriptfilePath_scripts, "make run-tools-elf", true);
 
@@ -166,11 +213,26 @@ void GeneratSimulationDevice()
     closedir(directory);
 }
 
-void displayTests() {
-    printf("\nDisplaying Testing options:\n");
-    printf("1. Compliance Tests [riscv.org]\n");
-    printf("2. RISC-V TEST SUITE [lowRISCV]\n");
-    printf("3. Unit Tests\n");
-    printf("4. Peripheral tests\n");
-    printf("\nEscolha uma opção: ");
+int DisplayLoad(char * opcao[NUM_OP]) 
+{
+    int i, op;
+    printf("\n[ Choose the desired repository for designing and running the tests ]\n");
+    for (i = 0; i < NUM_OP; i++) {
+        printf("%-30s\t\t\tOP:%d\n", opcao[i], i + 1);
+    }
+    printf("\n[Choose an option]: ");
+    scanf(" %d", &op);
+    return op;
+}
+
+int Display()
+{
+    char * opcoes[NUM_OP] = { "Compliance Tests [riscv.org]",
+                              "RISC-V TEST SUITE [lowRISCV]",
+                              "Unit Tests", 
+                              "Peripheral tests",
+                            };
+    int op;
+
+    return op = DisplayLoad(opcoes);
 }
