@@ -75,12 +75,13 @@ void GenerateVVP(char * string) {
     char dir_at[50];
     int count = 0;
 
-    if (strstr(string, "riscv-tests"))
-    {
+    // if (strstr(string, "riscv-tests"))
+    
         snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/", string);
         printf(">> Genarete Test [%s]\n", string);
-
-    }
+    
+  
+    
     sprintf(dir_at, "%s%stestbench.v", directory_path_base, "file_base/");
     fptr1 = mode_file(dir_at, "r");
     while (!feof(fptr1)) {
@@ -110,10 +111,10 @@ void GenerateVVP(char * string) {
                     char arq_hex[100];
                     if (strstr(linha[j], "hex.hex")) {
                         sprintf(arq_hex, "\t$readmemh(\"%s%s/%s_firmware.hex\", MEM);\n", directory_path, entry->d_name, entry->d_name);
-                        fprintf(fptr2, arq_hex);  
+                        fputs(arq_hex, fptr2);  
                     }
                     else {
-                        fprintf(fptr2, linha[j]);
+                        fputs(linha[j], fptr2);
                     }
                 }
                 fclose(fptr2);
@@ -137,7 +138,7 @@ void ResultTest(char * test, char *string) {
     FILE *fptr1, *fptr2;
     char *directory_path_base[200];
     bool pass = true;
-    
+
     snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/output_test", string);
     fptr1 = mode_file(directory_path_base, "r");
     

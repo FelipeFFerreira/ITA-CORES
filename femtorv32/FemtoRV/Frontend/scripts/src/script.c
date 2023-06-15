@@ -11,7 +11,7 @@ void Command(char *, char *, bool);
 
 void MachineCodeTool();
 
-void GeneratSimulation();
+void GeneratSimulation(char *);
 
 void GeneratSimulationDevice();
 
@@ -43,29 +43,33 @@ int main() {
     fprintf(stdout, "[%s] Processing Files For Compilation\n", __func__);
 
 #ifdef ENV_FRONTEND_SIGNOFF
-        switch (op) {
+    char type_test[100];
 
-        case COMPLIANCE_RISCV_ORG:
-            printf(">>COMPLIANCE_RISCV_ORG\n");
-            Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1 RISCV_TESTS=1 ", true);
-            break;
-        
-        case RISCV_SUITE_LOWRISCV:
-            printf(">>RISCV_SUITE_LOWRISCV\n");
-            Command(scriptfilePath_tooltchain, "make riscv-test-suite ENV_FRONTEND_SIGNOFF=1 RISCV_TEST_SUITE=1", true);
-            break;
+    switch (op) {
 
-        case UNIT_TESTS:
-            printf(">>UNIT_TESTS\n");
-            break;
+    case COMPLIANCE_RISCV_ORG:
+        printf(">>COMPLIANCE_RISCV_ORG\n");
+        Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1 RISCV_TESTS=1 ", true);
+        strcpy(type_test, "riscv-tests");
+        break;
+    
+    case RISCV_SUITE_LOWRISCV:
+        printf(">>RISCV_SUITE_LOWRISCV\n");
+        Command(scriptfilePath_tooltchain, "make riscv-test-suite ENV_FRONTEND_SIGNOFF=1 RISCV_TEST_SUITE=1", true);
+        strcpy(type_test, "riscv-test-suite");
+        break;
 
-        case PERIPHERAL:
-            printf(">>PERIPHERAL\n");
-            break;
-        
-         default:
-            printf( ">>Only the tools have been installed. Operation Canceled, because the informed test repository is invalid.\n!" );
-            exit(10);
+    case UNIT_TESTS:
+        printf(">>UNIT_TESTS\n");
+        break;
+
+    case PERIPHERAL:
+        printf(">>PERIPHERAL\n");
+        break;
+    
+        default:
+        printf( ">>Only the tools have been installed. Operation Canceled, because the informed test repository is invalid.\n!" );
+        exit(10);
         } 
 #else
         switch (op) {
@@ -110,7 +114,7 @@ int main() {
     MachineCodeTool();
     
 #ifdef ENV_FRONTEND_SIGNOFF
-    GeneratSimulation();
+    GeneratSimulation(type_test);
 #endif
 
     fprintf(stdout, "[%s] Gerando arquivos binarios de cada teste\n", __func__);
@@ -177,10 +181,12 @@ void MachineCodeTool() {
     closedir(directory);
 }
 
-void GeneratSimulation()
+void GeneratSimulation(char *type_test)
 {
+    char command[100];
     fprintf(stdout, "[%s] Preparando arquivos para simulação\n", __func__);
-    Command("", "./run-vvp riscv-tests", false);
+    snprintf(command, sizeof(command), "./run-vvp %s", type_test);
+    Command("", command, false);
 }
 
 void GeneratSimulationDevice()
