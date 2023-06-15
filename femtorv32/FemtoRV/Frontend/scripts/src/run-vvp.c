@@ -139,24 +139,27 @@ void ResultTest(char * test, char *string) {
     char *directory_path_base[200];
     bool pass = true;
 
-    snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/output_test", string);
-    fptr1 = mode_file(directory_path_base, "r");
-    
-    char line[100];
-    while (!feof(fptr1)) {
-        if (fgets(line, sizeof(line), fptr1) != NULL) {
-            if (strstr(line, "ERROR") != NULL) { 
-                pass = false;  
-                break;  
+    if (strstr(string, "riscv-tests")) {
+
+        snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/output_test", string);
+        fptr1 = mode_file(directory_path_base, "r");
+        
+        char line[100];
+        while (!feof(fptr1)) {
+            if (fgets(line, sizeof(line), fptr1) != NULL) {
+                if (strstr(line, "ERROR") != NULL) { 
+                    pass = false;  
+                    break;  
+                }
             }
         }
-    }
-    fptr2 = mode_file("../../build/resultado_tests.log", "a");
-    if (pass)
-        fprintf(fptr2, "%s: TESTE [%s]\t\t\t\t ------- [PASSOU]\n", time_str, test);
-    else 
-        fprintf(fptr2, "%s: TESTE [%s]\t\t\t\t ------- [FALHOU]\n", time_str, test);
+        fptr2 = mode_file("../../build/resultado_tests.log", "a");
+        if (pass)
+            fprintf(fptr2, "%s: TESTE [%s]\t\t\t\t ------- [PASSOU]\n", time_str, test);
+        else 
+            fprintf(fptr2, "%s: TESTE [%s]\t\t\t\t ------- [FALHOU]\n", time_str, test);
 
-    fclose(fptr1);
-    fclose(fptr2);
+        fclose(fptr1);
+        fclose(fptr2);
+    }
 }
