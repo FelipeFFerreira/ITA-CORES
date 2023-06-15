@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <unistd.h>
-#include "script.h"
+#include "definitions.h"
 
 void Command(char *, char *, bool);
 

@@ -15,10 +15,10 @@ mkdir_bin:
 run: 
 	cd bin/ && ./run-script
 
-run-vvp: run-vvp.o
+run-vvp: run-vvp.o src/definitions.h
 	gcc -o bin/run-vvp run-vvp.o
 
-run-vvp.o: src/run-vvp.c
+run-vvp.o: src/run-vvp.c src/definitions.h
 	gcc -c src/run-vvp.c $(CFLAGS)
 
 run-tools-elf: tool-elf.o
@@ -33,10 +33,10 @@ tool-elf.o: ../../TOOLS/elf-verilog/tool-elf.c
 tool-elf-flash.o: ../../TOOLS/elf-verilog/tool-elf-flash.c
 	gcc -c ../../TOOLS/elf-verilog/tool-elf-flash.c
 
-run-script: script.o src/script.h
+run-script: script.o src/definitions.h
 	gcc -o bin/run-script script.o
 
-script.o: src/script.c src/script.h
+script.o: src/script.c src/definitions.h
 	gcc -c src/script.c	$(CFLAGS)
 
 clean_bin:

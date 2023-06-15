@@ -6,6 +6,7 @@
 #include <time.h>
 #include <string.h>
 #include <unistd.h>
+#include "definitions.h"
 
 
 void GenerateVVP(char *);
@@ -139,7 +140,7 @@ void ResultTest(char * test, char *string) {
     char *directory_path_base[200];
     bool pass = true;
 
-    if (strstr(string, "riscv-tests")) {
+    if (strstr(string, REPO_COMPLIANCE_RISCV_ORG)) {
 
         snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/output_test", string);
         fptr1 = mode_file(directory_path_base, "r");
