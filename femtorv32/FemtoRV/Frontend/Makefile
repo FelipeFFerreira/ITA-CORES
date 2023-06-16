@@ -17,17 +17,10 @@ GCC_WARNS += -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -pedanti
 TOOLCHAIN_PREFIX = $(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX)i/bin/riscv32-unknown-elf-
 COMPRESSED_ISA = C
 
-ifdef RISCV_TEST_SUITE
-TEST_OBJS = $(addsuffix .o,$(basename $(wildcard riscv-test-suite/*.S)))
-OBJECTS := $(wildcard riscv-test-suite/*.o)
-ELFS := $(patsubst riscv-test-suite/%.o,build/%.elf,$(TEST_OBJS))
-else
-ifdef RISCV_TESTS
-TEST_OBJS = $(addsuffix .o,$(basename $(wildcard riscv-tests/*.S)))
-OBJECTS := $(wildcard riscv-tests/*.o)
-ELFS := $(patsubst riscv-tests/%.o,build/%.elf,$(TEST_OBJS))
-endif
-endif
+TEST_OBJS_RISCV_TESTS = $(addsuffix .o,$(basename $(wildcard riscv-tests/*.S)))
+OBJECTS_RISCV_TESTS := $(wildcard riscv-tests/*.o)
+ELFS_RISCV_TESTS := $(patsubst riscv-tests/%.o,build/%.elf,$(TEST_OBJS_RISCV_TESTS))
+
 TEST_DIRS := $(wildcard build/*/)
 ELFS_BUILD := $(foreach dir,$(TEST_DIRS),$(wildcard $(dir)*.elf))
 BIN_DIR := $(CURDIR)/bin_tests
@@ -65,7 +58,7 @@ riscv-tests/%.o: riscv-tests/%.S riscv-tests/riscv_test.h riscv-tests/test_macro
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) \
 		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
 
-riscv-tests: $(FIRMWARE_OBJS) $(TEST_OBJS) $(ELFS)
+riscv-tests: $(FIRMWARE_OBJS) $(TEST_OBJS_RISCV_TESTS) $(ELFS_RISCV_TESTS)
 
 build/%.elf: riscv-tests/%.o
 	mkdir -p $(basename $@)
@@ -73,19 +66,6 @@ build/%.elf: riscv-tests/%.o
 	$(TOOLCHAIN_PREFIX)ld -T spiflash0.ld -m elf32lriscv -nostdlib -norelax $(CURRENT_DIR)/riscv-tests/$*.o -o $@
 	mv $@ $(basename $@)/$(notdir $@)
 
-#riscv-test-suite
-riscv-test-suite/%.o: riscv-test-suite/%.S riscv-test-suite/riscv_test_macros.h riscv-test-suite/compliance_test.h riscv-test-suite/compliance_io.h
-	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) \
-		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
-
-riscv-test-suite: $(FIRMWARE_OBJS) $(TEST_OBJS) $(ELFS)
-
-build/%.elf: riscv-test-suite/%.o
-	mkdir -p $(basename $@)
-	@echo "Using object files: $(CURRENT_DIR)/riscv-test-suite/$*.o"
-	$(TOOLCHAIN_PREFIX)ld -T spiflash0.ld -m elf32lriscv -nostdlib -norelax $(CURRENT_DIR)/riscv-test-suite/$*.o -o $@
-	mv $@ $(basename $@)/$(notdir $@)
-#
 build/%.hex: build/%.elf
 	objcopy -O verilog $< $@
 
@@ -148,7 +128,7 @@ build-tools:
 clean:
 	rm -rf riscv-gnu-toolchain-riscv32i riscv-gnu-toolchain-riscv32ic \
 		riscv-gnu-toolchain-riscv32im riscv-gnu-toolchain-riscv32imc
-	rm -vrf $(FIRMWARE_OBJS) $(TEST_OBJS) \
+	rm -vrf $(FIRMWARE_OBJS) $(TEST_OBJS_RISCV_TESTS) \
 		firmware/firmware.elf firmware/firmware.bin firmware/firmware.hex \
 	rm -rf build
 	rm -rf $(BIN_DIR)
