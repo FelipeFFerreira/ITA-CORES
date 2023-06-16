@@ -17,9 +17,15 @@ GCC_WARNS += -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -pedanti
 TOOLCHAIN_PREFIX = $(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX)i/bin/riscv32-unknown-elf-
 COMPRESSED_ISA = C
 
+#
 TEST_OBJS_RISCV_TESTS = $(addsuffix .o,$(basename $(wildcard riscv-tests/*.S)))
 OBJECTS_RISCV_TESTS := $(wildcard riscv-tests/*.o)
 ELFS_RISCV_TESTS := $(patsubst riscv-tests/%.o,build/%.elf,$(TEST_OBJS_RISCV_TESTS))
+
+TEST_OBJS_RISCV_TEST_SUITE = $(addsuffix .o,$(basename $(wildcard riscv-test-suite/*.S)))
+OBJECTS_RISCV_TEST_SUITE := $(wildcard riscv-test-suite/*.o)
+ELFS_RISCV_TEST_SUITE := $(patsubst riscv-test-suite/%.o,build/%.elf,$(TEST_OBJS_RISCV_TEST_SUITE))
+#
 
 TEST_DIRS := $(wildcard build/*/)
 ELFS_BUILD := $(foreach dir,$(TEST_DIRS),$(wildcard $(dir)*.elf))
@@ -54,6 +60,7 @@ firmware/start.o: firmware/start.S
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im$(subst C,c,$(COMPRESSED_ISA)) -o $@ $<
 	cp $@ $(CURRENT_DIR)
 
+# RISCV-TESTS
 riscv-tests/%.o: riscv-tests/%.S riscv-tests/riscv_test.h riscv-tests/test_macros.h
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) \
 		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
@@ -65,6 +72,21 @@ build/%.elf: riscv-tests/%.o
 	@echo "Using object files: $(CURRENT_DIR)/riscv-tests/$*.o"
 	$(TOOLCHAIN_PREFIX)ld -T spiflash0.ld -m elf32lriscv -nostdlib -norelax $(CURRENT_DIR)/riscv-tests/$*.o -o $@
 	mv $@ $(basename $@)/$(notdir $@)
+#
+
+# RISCV-TEST-SUITE
+riscv-test-suite/%.o: riscv-test-suite/%.S riscv-test-suite/riscv_test_macros.h riscv-test-suite/compliance_test.h riscv-test-suite/compliance_io.h
+	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) \
+		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
+
+riscv-test-suite: $(FIRMWARE_OBJS) $(TEST_OBJS_RISCV_TEST_SUITE) $(ELFS_RISCV_TEST_SUITE)
+
+build/%.elf: riscv-test-suite/%.o
+	mkdir -p $(basename $@)
+	@echo "Using object files: $(CURRENT_DIR)/riscv-test-suite/$*.o"
+	$(TOOLCHAIN_PREFIX)ld -T spiflash0.ld -m elf32lriscv -nostdlib -norelax $(CURRENT_DIR)/riscv-test-suite/$*.o -o $@
+	mv $@ $(basename $@)/$(notdir $@)
+#
 
 build/%.hex: build/%.elf
 	objcopy -O verilog $< $@
