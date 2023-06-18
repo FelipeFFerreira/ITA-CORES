@@ -92,6 +92,37 @@
       bnez t2, delay2_fail;         \
   j loop_fail;
 
+#define RVTEST_FAIL_CHECK			\
+fail_check:					\
+	addi a0, zero, 100;   \
+	addi a1, zero, 'E';   \
+	addi a2, zero, 'R';   \
+	addi a3, zero, '\n';  \
+	sb a1, 0(a0);         \
+	addi a0, a0, 1;       \
+	sb a2, 0(a0);         \
+	addi a0, a0, 1;       \
+	sb a3, 0(a0);         \
+  	lui t0, %hi(0x404000);       \
+ 	li t1, 0;                    \
+  	sw t1, %lo(0x404000)(t0);     \
+  loop_fail_check:                        \
+    lui t0, %hi(0x404000);     \
+    li t1, 4095;               \
+    sw t1, %lo(0x404000)(t0);   \
+    li t2, s_05;               \
+    delay_fail_check:                     \
+      addi t2, t2, -1;         \
+      bnez t2, delay_fail_check;          \
+    lui t0, %hi(0x404000);     \
+    li t1, 0;                  \
+    sw t1, %lo(0x404000)(t0);   \
+    li t2, s_05;               \
+    delay2_fail_check:                    \
+      addi t2, t2, -1;         \
+      bnez t2, delay2_fail_check;         \
+  j loop_fail_check;
+
 #define PUTCHAR \
 	putchar: \
 	sw a0, IO_UART_DAT(gp); \

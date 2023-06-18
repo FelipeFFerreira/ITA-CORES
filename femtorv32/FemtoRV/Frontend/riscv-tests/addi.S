@@ -9,8 +9,12 @@
 
 #include "riscv_test.h"
 #include "test_macros.h"
-.text;				\
-	.global main;
+
+.globl main
+.globl fail_check
+.section .text
+
+RVTEST_FAIL_CHECK
 
 main:
 RVTEST_RV32U

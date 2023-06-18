@@ -41,9 +41,10 @@ int main() {
     Command(scriptfilePath_tooltchain, "make toolchain", true);
 
     fprintf(stdout, "[%s] Processing Files For Compilation\n", __func__);
+    
+    char type_test[100];
 
 #ifdef ENV_FRONTEND_SIGNOFF
-    char type_test[100];
 
     switch (op) {
 
@@ -123,7 +124,7 @@ int main() {
 
 #ifndef ENV_FRONTEND_SIGNOFF
     fprintf(stdout, "[%s] Preparando simulações para o device\n", __func__);
-    GeneratSimulationDevice(); 
+    // GeneratSimulationDevice(); 
 #endif
 
     return 0;
