@@ -2,11 +2,6 @@ RISCV_GNU_TOOLCHAIN_GIT_REVISION = 411d134
 RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX = /opt/riscv32
 
 SHELL = bash
-PYTHON = python3
-VERILATOR = verilator
-ICARUS_SUFFIX =
-IVERILOG = iverilog$(ICARUS_SUFFIX)
-VVP = vvp$(ICARUS_SUFFIX)
 
 CURRENT_DIR = $(shell pwd)
 FIRMWARE_SRC = $(wildcard firmware/*.S)
@@ -17,33 +12,33 @@ GCC_WARNS += -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -pedanti
 TOOLCHAIN_PREFIX = $(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX)i/bin/riscv32-unknown-elf-
 COMPRESSED_ISA = C
 
-#RISCV-TESTS
-ifdef RISCV-TESTS
-TEST_OBJS_RISCV_TESTS = $(addsuffix .o,$(basename $(wildcard riscv-tests/*.S)))
-OBJECTS_RISCV_TESTS := $(wildcard riscv-tests/*.o)
-ELFS_RISCV_TESTS := $(patsubst riscv-tests/%.o,build/%.elf,$(TEST_OBJS_RISCV_TESTS))
+TESTDIR ?= riscv-test-suite
+ifeq ($(TESTDIR), riscv-test-suite)
+DEPENDENCIES = riscv_test_macros.h compliance_test.h compliance_io.h
+else ifeq ($(TESTDIR), riscv-tests)
+DEPENDENCIES = riscv_test.h test_macros.h
+else
+$(error Invalid TESTDIR: $(TESTDIR))
 endif
 
-#RISCV-TESTS-SUITE
-ifdef RISCV-TESTS-SUITE
-TEST_OBJS_RISCV_TEST_SUITE = $(addsuffix .o,$(basename $(wildcard riscv-test-suite/*.S)))
-OBJECTS_RISCV_TEST_SUITE := $(wildcard riscv-test-suite/*.o)
-ELFS_RISCV_TEST_SUITE := $(patsubst riscv-test-suite/%.o,build/%.elf,$(TEST_OBJS_RISCV_TEST_SUITE))
-endif
+GIT_ENV = true
 
+TEST_OBJS = $(addsuffix .o,$(basename $(wildcard $(TESTDIR)/*.S)))
+OBJECTS := $(wildcard $(TESTDIR)/*.o)
+ELFS := $(patsubst $(TESTDIR)/%.o,build/%.elf,$(TEST_OBJS))
 TEST_DIRS := $(wildcard build/*/)
 ELFS_BUILD := $(foreach dir,$(TEST_DIRS),$(wildcard $(dir)*.elf))
 BIN_DIR := $(CURDIR)/bin_tests
 BINARIES := $(patsubst build/%.elf,build/%.bin,$(ELFS_BUILD))
 BINARIES_COPY := $(patsubst build/%.elf,$(BIN_DIR)/%.bin,$(ELFS_BUILD))
 
+.PHONY: all bin toolchain
+
 CFLAGS =
 
 ifdef ENV_FRONTEND_SIGNOFF
     CFLAGS += -DENV_FRONTEND_SIGNOFF=$(ENV_FRONTEND_SIGNOFF)
 endif
-
-.PHONY: all riscv-formal bin
 
 toolchain:
 	if [ ! -d "$(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX)" ]; then \
@@ -52,49 +47,26 @@ toolchain:
 		echo "Toolchain already installed. Skipping installation."; \
 	fi
 
-.PHONY: toolchain
-
-GIT_ENV = true
-
 all: hex
 
 hex: $(patsubst build/%.elf,build/%.hex,$(ELFS_BUILD))
 
 firmware/start.o: firmware/start.S
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im$(subst C,c,$(COMPRESSED_ISA)) -o $@ $<
+#cp $@ $(CURRENT_DIR)
 
+$(TESTDIR)/%.o: $(TESTDIR)/%.S $(addprefix $(TESTDIR)/, $(DEPENDENCIES))
+	@echo "Compilando: "
+	@echo "$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) -DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<"
+	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) -DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
 
-#RISCV-TESTS
-ifdef RISCV-TESTS
-riscv-tests/%.o: riscv-tests/%.S riscv-tests/riscv_test.h riscv-tests/test_macros.h riscv-tests/definitions.h 
-	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) \
-		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
+$(TESTDIR): $(FIRMWARE_OBJS) $(TEST_OBJS) $(ELFS)
 
-riscv-tests: $(FIRMWARE_OBJS) $(TEST_OBJS_RISCV_TESTS) $(ELFS_RISCV_TESTS)
-
-build/%.elf: firmware/start.o riscv-tests/%.o
+build/%.elf: firmware/start.o $(TESTDIR)/%.o
 	mkdir -p $(basename $@)
-	@echo "[RISCV-TESTS] Using object files: firmware/start.o riscv-tests/$*.o"
-	$(TOOLCHAIN_PREFIX)ld -T firmware/spiflash0.ld -m elf32lriscv -nostdlib -norelax firmware/start.o riscv-tests/$*.o -o $@
+	@echo "[$(TESTDIR)] Using object files: $(CURRENT_DIR)/$(TESTDIR)/$*.o"
+	$(TOOLCHAIN_PREFIX)ld -T firmware/spiflash0.ld -m elf32lriscv -nostdlib -norelax firmware/start.o $(CURRENT_DIR)/$(TESTDIR)/$*.o -o $@
 	mv $@ $(basename $@)/$(notdir $@)
-endif
-###
-
-#RISCV-TESTS-SUITE
-ifdef RISCV-TESTS-SUITE
-riscv-test-suite/%.o: riscv-test-suite/%.S riscv-test-suite/riscv_test_macros.h riscv-test-suite/compliance_test.h riscv-test-suite/compliance_io.h
-	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) \
-		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
-
-riscv-test-suite: $(FIRMWARE_OBJS) $(TEST_OBJS_RISCV_TEST_SUITE) $(ELFS_RISCV_TEST_SUITE)
-
-build/%.elf: firmware/start.o riscv-test-suite/%.o
-	mkdir -p $(basename $@)
-	@echo "[RISCV-TESTS-SUITE] Using object files: $(CURRENT_DIR)/riscv-test-suite/$*.o"
-	$(TOOLCHAIN_PREFIX)ld -T firmware/spiflash0.ld -m elf32lriscv -nostdlib -norelax firmware/start.o riscv-test-suite/$*.o -o $@
-	mv $@ $(basename $@)/$(notdir $@)
-endif
-###
 
 build/%.hex: build/%.elf
 	objcopy -O verilog $< $@
@@ -158,9 +130,11 @@ build-tools:
 clean:
 	rm -rf riscv-gnu-toolchain-riscv32i riscv-gnu-toolchain-riscv32ic \
 		riscv-gnu-toolchain-riscv32im riscv-gnu-toolchain-riscv32imc
-	rm -vrf $(FIRMWARE_OBJS) $(TEST_OBJS_RISCV_TESTS) \
+	rm -vrf $(FIRMWARE_OBJS) $(TEST_OBJS) \
 		firmware/firmware.elf firmware/firmware.bin firmware/firmware.hex \
 	rm -rf build
 	rm -rf $(BIN_DIR)
+	rm -f $(TESTDIR)/*.o
+
 
 .PHONY: clean

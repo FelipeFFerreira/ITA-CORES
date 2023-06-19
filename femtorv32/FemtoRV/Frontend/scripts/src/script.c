@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "definitions.h"
+#include <time.h>
 
 void Command(char *, char *, bool);
 
@@ -19,12 +20,15 @@ int DisplayLoad(char * opcao[NUM_OP]);
 
 int Display();
 
+void Loading();
+
 int main() {
 
+    system("clear");  
 #ifdef ENV_FRONTEND_SIGNOFF
-    fprintf(stdout, "[%s] \nEnvironment For [SIMULATION] Configured\n", __func__);
+    fprintf(stdout, "[%s] \n\nEnvironment For [SIMULATION] Configured\n", __func__);
 #else
-    fprintf(stdout, "[%s] \nEnvironment For [DEVICE] Configured\n", __func__);
+    fprintf(stdout, "[%s] \n\nEnvironment For [DEVICE] Configured\n", __func__);
 #endif
 
     char* scriptfilePath_tooltchain = "../../";
@@ -49,23 +53,31 @@ int main() {
     switch (op) {
 
     case COMPLIANCE_RISCV_ORG:
+        Command(scriptfilePath_tooltchain, "make clean TESTDIR=riscv-tests", true);
         printf(">>COMPLIANCE_RISCV_ORG\n");
-        Command(scriptfilePath_tooltchain, "make riscv-tests RISCV-TESTS=1 ENV_FRONTEND_SIGNOFF=1", true);
+        Loading();
+        Command(scriptfilePath_tooltchain, "make riscv-tests TESTDIR=riscv-tests ENV_FRONTEND_SIGNOFF=1", true);
         strcpy(type_test, "riscv-tests");
         break;
     
     case RISCV_SUITE_LOWRISCV:
+        Command(scriptfilePath_tooltchain, "make clean TESTDIR=riscv-test-suite", true);
         printf(">>RISCV_SUITE_LOWRISCV\n");
+        Loading();
         Command(scriptfilePath_tooltchain, "make riscv-test-suite RISCV-TESTS-SUITE=1 ENV_FRONTEND_SIGNOFF=1", true);
         strcpy(type_test, "riscv-test-suite");
         break;
 
     case UNIT_TESTS:
+        Loading();
         printf(">>UNIT_TESTS\n");
         break;
 
     case PERIPHERAL:
+        Loading();
         printf(">>PERIPHERAL\n");
+        Command(scriptfilePath_tooltchain, "make peripheral-tests PERIPHERAL-TESTS=1", true);
+        strcpy(type_test, "peripheral-tests");
         break;
     
         default:
@@ -76,13 +88,15 @@ int main() {
         switch (op) {
 
         case COMPLIANCE_RISCV_ORG:
+            Command(scriptfilePath_tooltchain, "make clean TESTDIR=riscv-tests", true);
             printf(">>COMPLIANCE_RISCV_ORG\n");
-            Command(scriptfilePath_tooltchain, "make riscv-tests", true);
+            Loading();
+            Command(scriptfilePath_tooltchain, "make riscv-tests TESTDIR=riscv-tests", true);
             break;
         
         case RISCV_SUITE_LOWRISCV:
-            printf(">>RISCV_SUITE_LOWRISCV\n");
-            Command(scriptfilePath_tooltchain, "make riscv-test-suite", true);
+           printf(">Não Suportado\n");
+           exit(10);
             break;
         
         case UNIT_TESTS:
@@ -91,6 +105,8 @@ int main() {
 
         case PERIPHERAL:
             printf(">>PERIPHERAL\n");
+            Command(scriptfilePath_tooltchain, "make peripheral-tests PERIPHERAL-TESTS=1", true);
+            strcpy(type_test, "peripheral-tests");
             break;
         
          default:
@@ -114,9 +130,9 @@ int main() {
 
     MachineCodeTool();
     
-#ifdef ENV_FRONTEND_SIGNOFF
+// #ifdef ENV_FRONTEND_SIGNOFF
     GeneratSimulation(type_test);
-#endif
+// #endif
 
     fprintf(stdout, "[%s] Gerando arquivos binarios de cada teste\n", __func__);
 
@@ -124,7 +140,7 @@ int main() {
 
 #ifndef ENV_FRONTEND_SIGNOFF
     fprintf(stdout, "[%s] Preparando simulações para o device\n", __func__);
-    // GeneratSimulationDevice(); 
+    GeneratSimulationDevice(); 
 #endif
 
     return 0;
@@ -223,7 +239,7 @@ void GeneratSimulationDevice()
 int DisplayLoad(char * opcao[NUM_OP]) 
 {
     int i, op;
-    printf("\n[ Choose the desired repository for designing and running the tests ]\n");
+    printf("\n[ \nChoose the desired repository for designing and running the tests ]\n");
     for (i = 0; i < NUM_OP; i++) {
         printf("%-30s\t\t\tOP:%d\n", opcao[i], i + 1);
     }
@@ -242,4 +258,26 @@ int Display()
     int op;
 
     return op = DisplayLoad(opcoes);
+}
+
+void Loading()
+{
+    #define BAR_LENGTH 50 
+
+    for (int i = 0; i <= BAR_LENGTH; i++) {
+        printf("[");
+        
+        for(int j = 0; j < i; j++)
+            printf("#");
+            
+        for(int j = i; j < BAR_LENGTH; j++)
+            printf(" ");
+            
+        printf("]\r");
+        fflush(stdout);
+        
+        usleep(5000000/BAR_LENGTH);
+    }
+    
+    printf("\n");
 }

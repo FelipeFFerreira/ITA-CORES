@@ -78,10 +78,8 @@ void GenerateVVP(char * string) {
 
     // if (strstr(string, "riscv-tests"))
     
-        snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/", string);
-        printf(">> Genarete Test [%s]\n", string);
-    
-  
+    snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/", string);
+    printf(">> Genarete Test [%s]\n", string);
     
     sprintf(dir_at, "%s%stestbench.v", directory_path_base, "file_base/");
     fptr1 = mode_file(dir_at, "r");
@@ -100,10 +98,8 @@ void GenerateVVP(char * string) {
     }
 
     struct dirent* entry;
-
     while ((entry = readdir(directory)) != NULL) {
         if (entry->d_type == DT_DIR) {
-            
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
                 fprintf(stdout, "[%s] Gerando arquivos para simulação [%s]\n",  __func__, entry->d_name);
                 sprintf(dir_at, "%s%s", directory_path_base, "testbench.v");
@@ -139,12 +135,10 @@ void ResultTest(char * test, char *string) {
     char *directory_path_base[200];
     bool pass = true;
     FILE *fptr_log = mode_file("../../build/resultado_tests.log", "a");
-
     if (strstr(string, REPO_COMPLIANCE_RISCV_ORG)) {
         FILE *fptr1;
         snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/output_test", string);
         fptr1 = mode_file(directory_path_base, "r");
-        
         char line[100];
         while (!feof(fptr1)) {
             if (fgets(line, sizeof(line), fptr1) != NULL) {
@@ -162,7 +156,6 @@ void ResultTest(char * test, char *string) {
         char path_test[200], output_reference[200];
         char line_output[100][100], line_reference[100][100];
         int count_output = 0, count_reference = 0;
-        
         snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/memory_contents", string);
         fptr1 = mode_file(directory_path_base, "r");
         snprintf(path_test, sizeof(path_test), "../../%s/references/%s.reference_output", string, test);
