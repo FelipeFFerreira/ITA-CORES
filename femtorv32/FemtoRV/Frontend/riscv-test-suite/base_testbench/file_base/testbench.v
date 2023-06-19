@@ -736,7 +736,7 @@ module testbench;
 	);
 
 	initial begin
-    	file = $fopen("memory_contents.txt", "w");
+    	file = $fopen("memory_contents", "w");
 	end
 	
 	initial begin

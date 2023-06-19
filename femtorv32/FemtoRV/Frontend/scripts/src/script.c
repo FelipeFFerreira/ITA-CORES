@@ -50,13 +50,13 @@ int main() {
 
     case COMPLIANCE_RISCV_ORG:
         printf(">>COMPLIANCE_RISCV_ORG\n");
-        Command(scriptfilePath_tooltchain, "make riscv-tests ENV_FRONTEND_SIGNOFF=1", true);
+        Command(scriptfilePath_tooltchain, "make riscv-tests RISCV-TESTS=1 ENV_FRONTEND_SIGNOFF=1", true);
         strcpy(type_test, "riscv-tests");
         break;
     
     case RISCV_SUITE_LOWRISCV:
         printf(">>RISCV_SUITE_LOWRISCV\n");
-        Command(scriptfilePath_tooltchain, "make riscv-test-suite ENV_FRONTEND_SIGNOFF=1", true);
+        Command(scriptfilePath_tooltchain, "make riscv-test-suite RISCV-TESTS-SUITE=1 ENV_FRONTEND_SIGNOFF=1", true);
         strcpy(type_test, "riscv-test-suite");
         break;
 

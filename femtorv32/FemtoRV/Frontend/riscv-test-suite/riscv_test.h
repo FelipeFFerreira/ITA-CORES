@@ -106,11 +106,9 @@
 #define INTERRUPT_HANDLER j other_exception /* No interrupts should occur */
 
 #define RVTEST_CODE_BEGIN                                               \
-        .section .text.init;                                            \
-        .align  6;                                                      \
-        .globl _start;                                                  \
-_start:                                                                 \
-begin_testcode:
+//         .section .text.init;                                            \
+//         .align  6;                                                      \
+// begin_testcode:
 
 
 //-----------------------------------------------------------------------
@@ -162,5 +160,46 @@ end_testcode:                                                           \
         .word 128;                                                      \
         .align 8; .global end_regstate; end_regstate:                   \
         .word 4;
+
+
+//
+#ifndef ENV_FRONTEND_SIGNOFF
+#define s_1 44444
+#define s_05 4938
+#else
+#define s_1 7
+#define s_05 1
+#endif
+
+#define RVTEST_FAIL_CHECK			\
+fail_check:					\
+	addi a0, zero, 100;   \
+	addi a1, zero, 'E';   \
+	addi a2, zero, 'R';   \
+	addi a3, zero, '\n';  \
+	sb a1, 0(a0);         \
+	addi a0, a0, 1;       \
+	sb a2, 0(a0);         \
+	addi a0, a0, 1;       \
+	sb a3, 0(a0);         \
+  	lui t0, %hi(0x404000);       \
+ 	li t1, 0;                    \
+  	sw t1, %lo(0x404000)(t0);     \
+  loop_fail_check:                        \
+    lui t0, %hi(0x404000);     \
+    li t1, 4095;               \
+    sw t1, %lo(0x404000)(t0);   \
+    li t2, s_05;               \
+    delay_fail_check:                     \
+      addi t2, t2, -1;         \
+      bnez t2, delay_fail_check;          \
+    lui t0, %hi(0x404000);     \
+    li t1, 0;                  \
+    sw t1, %lo(0x404000)(t0);   \
+    li t2, s_05;               \
+    delay2_fail_check:                    \
+      addi t2, t2, -1;         \
+      bnez t2, delay2_fail_check;         \
+  j loop_fail_check;
 
 #endif

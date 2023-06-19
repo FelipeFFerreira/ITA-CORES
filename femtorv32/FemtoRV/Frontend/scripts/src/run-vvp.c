@@ -18,7 +18,7 @@ void ResultTest(char *, char *);
 static FILE * mode_file(char file[], char mode[]) {
     FILE *fptr;
     if( (fptr = fopen(file, mode)) == NULL) {
-        puts("Error opening file!");
+        printf("Error opening file [%s]\n!", file);
         exit(1);
     }
     return fptr;
@@ -136,12 +136,12 @@ void ResultTest(char * test, char *string) {
     struct tm* time_info = localtime(&current_time);
     char time_str[20];
     strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", time_info);
-    FILE *fptr1, *fptr2;
     char *directory_path_base[200];
     bool pass = true;
+    FILE *fptr_log = mode_file("../../build/resultado_tests.log", "a");
 
     if (strstr(string, REPO_COMPLIANCE_RISCV_ORG)) {
-
+        FILE *fptr1;
         snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/output_test", string);
         fptr1 = mode_file(directory_path_base, "r");
         
@@ -154,13 +154,44 @@ void ResultTest(char * test, char *string) {
                 }
             }
         }
-        fptr2 = mode_file("../../build/resultado_tests.log", "a");
-        if (pass)
-            fprintf(fptr2, "%s: TESTE [%s]\t\t\t\t ------- [PASSOU]\n", time_str, test);
-        else 
-            fprintf(fptr2, "%s: TESTE [%s]\t\t\t\t ------- [FALHOU]\n", time_str, test);
-
         fclose(fptr1);
-        fclose(fptr2);
     }
+
+    if (strstr(string, REPO_RISCV_SUITE_LOWRISCV)) {
+        FILE *fptr1, *fptr2, *fptr3;
+        char path_test[200], output_reference[200];
+        char line_output[100][100], line_reference[100][100];
+        int count_output = 0, count_reference = 0;
+        
+        snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/memory_contents", string);
+        fptr1 = mode_file(directory_path_base, "r");
+        snprintf(path_test, sizeof(path_test), "../../%s/references/%s.reference_output", string, test);
+        fptr2 = mode_file(path_test, "r");
+        snprintf(output_reference, sizeof(output_reference), "../../build/%s/%s_%s.reference_output", test, test, string);
+        fptr3 = mode_file(output_reference, "w");
+        while (!feof(fptr1)) {
+            if (fgets(line_output[count_output], sizeof(line_output[0]), fptr1)) {
+                if (strstr(line_output[count_output], "xxxxxxxx") == NULL) {
+                    fputs(line_output[count_output], fptr3);
+                    if (fgets(line_reference[count_reference], sizeof(line_reference[0]), fptr2)) {
+                        line_output[count_output][strcspn(line_output[count_output], "\r\n")] = 0;
+                        line_reference[count_reference][strcspn(line_reference[count_reference], "\r\n")] = 0;
+                        if (strcmp(line_reference[count_reference], line_output[count_output]) != 0) {
+                            printf("[%s] != [%s]\n", line_output[count_output], line_reference[count_reference]);
+                            pass = false;
+                        } else {
+                             printf("[%s] == [%s]\n", line_output[count_output], line_reference[count_reference]);
+                        }
+                        count_reference += 1;
+                    }
+                }
+                count_output += 1;
+            }
+        }
+    }
+
+    if (pass)
+        fprintf(fptr_log, "%s: TESTE [%s]\t\t\t\t ------- [PASSOU]\n", time_str, test);
+    else 
+        fprintf(fptr_log, "%s: TESTE [%s]\t\t\t\t ------- [FALHOU]\n", time_str, test);
 }
