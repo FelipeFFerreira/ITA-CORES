@@ -64,19 +64,22 @@ int main() {
         Command(scriptfilePath_tooltchain, "make clean TESTDIR=riscv-test-suite", true);
         printf(">>RISCV_SUITE_LOWRISCV\n");
         Loading();
-        Command(scriptfilePath_tooltchain, "make riscv-test-suite RISCV-TESTS-SUITE=1 ENV_FRONTEND_SIGNOFF=1", true);
+        Command(scriptfilePath_tooltchain, "make riscv-test-suite TESTDIR=riscv-test-suite ENV_FRONTEND_SIGNOFF=1", true);
         strcpy(type_test, "riscv-test-suite");
         break;
 
     case UNIT_TESTS:
+        Command(scriptfilePath_tooltchain, "make clean TESTDIR=peripheral-tests", true);
         Loading();
         printf(">>UNIT_TESTS\n");
+        Command(scriptfilePath_tooltchain, "make peripheral-tests TESTDIR=peripheral-tests ENV_FRONTEND_SIGNOFF=1", true);
         break;
 
     case PERIPHERAL:
+        Command(scriptfilePath_tooltchain, "make clean TESTDIR=peripheral-tests", true);
         Loading();
         printf(">>PERIPHERAL\n");
-        Command(scriptfilePath_tooltchain, "make peripheral-tests PERIPHERAL-TESTS=1", true);
+        Command(scriptfilePath_tooltchain, "make peripheral-tests TESTDIR=peripheral-tests", true);
         strcpy(type_test, "peripheral-tests");
         break;
     
@@ -95,8 +98,9 @@ int main() {
             break;
         
         case RISCV_SUITE_LOWRISCV:
-           printf(">Não Suportado\n");
-           exit(10);
+            Loading();
+            printf(">Não Suportado\n");
+            exit(10);
             break;
         
         case UNIT_TESTS:
@@ -104,11 +108,11 @@ int main() {
             break;
 
         case PERIPHERAL:
-            printf(">>PERIPHERAL\n");
-            Command(scriptfilePath_tooltchain, "make peripheral-tests PERIPHERAL-TESTS=1", true);
-            strcpy(type_test, "peripheral-tests");
+            Loading();
+            printf(">Não Suportado\n");
+            exit(10);
             break;
-        
+
          default:
             printf( ">>Only the tools have been installed. Operation Canceled, because the informed test repository is invalid.\n!" );
             exit(10);
@@ -130,9 +134,9 @@ int main() {
 
     MachineCodeTool();
     
-// #ifdef ENV_FRONTEND_SIGNOFF
+#ifdef ENV_FRONTEND_SIGNOFF
     GeneratSimulation(type_test);
-// #endif
+#endif
 
     fprintf(stdout, "[%s] Gerando arquivos binarios de cada teste\n", __func__);
 

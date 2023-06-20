@@ -1,0 +1,2 @@
+
+include ../../../FIRMWARE/makefile.inc 

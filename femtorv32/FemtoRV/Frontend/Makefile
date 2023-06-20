@@ -1,5 +1,6 @@
 RISCV_GNU_TOOLCHAIN_GIT_REVISION = 411d134
 RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX = /opt/riscv32
+RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX_C = ../FIRMWARE/TOOLCHAIN/riscv64-unknown-elf-gcc-8.3.0-2020.04.0-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-
 
 SHELL = bash
 
@@ -18,14 +19,15 @@ DEPENDENCIES = riscv_test_macros.h compliance_test.h compliance_io.h
 else ifeq ($(TESTDIR), riscv-tests)
 DEPENDENCIES = riscv_test.h test_macros.h
 else
-$(error Invalid TESTDIR: $(TESTDIR))
+DEPENDENCIES =
+#$(error Invalid TESTDIR: $(TESTDIR))
 endif
 
 GIT_ENV = true
 
-TEST_OBJS = $(addsuffix .o,$(basename $(wildcard $(TESTDIR)/*.S)))
+SRC_OBJS = $(addsuffix .o,$(basename $(wildcard $(TESTDIR)/*.S $(TESTDIR)/*.c)))
 OBJECTS := $(wildcard $(TESTDIR)/*.o)
-ELFS := $(patsubst $(TESTDIR)/%.o,build/%.elf,$(TEST_OBJS))
+ELFS := $(patsubst $(TESTDIR)/%.o,build/%.elf,$(SRC_OBJS))
 TEST_DIRS := $(wildcard build/*/)
 ELFS_BUILD := $(foreach dir,$(TEST_DIRS),$(wildcard $(dir)*.elf))
 BIN_DIR := $(CURDIR)/bin_tests
@@ -53,10 +55,14 @@ hex: $(patsubst build/%.elf,build/%.hex,$(ELFS_BUILD))
 
 firmware/start.o: firmware/start.S
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im$(subst C,c,$(COMPRESSED_ISA)) -o $@ $<
-#cp $@ $(CURRENT_DIR)
+
+$(TESTDIR)/%.o: $(TESTDIR)/%.c $(addprefix $(TESTDIR)/, $(DEPENDENCIES))
+	@echo "Compilando arquivo C: "
+	@echo "$(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX_C)gcc -I. -O2 -fno-pic -march=rv32i -mabi=ilp32 -fno-stack-protector -w -Wl,--no-relax -c $< $(INCLUDES)"
+	$(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX_C)gcc -I. -O2 -fno-pic -march=rv32i -mabi=ilp32 -fno-stack-protector -w -Wl,--no-relax -c $< $(INCLUDES) -o $@
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.S $(addprefix $(TESTDIR)/, $(DEPENDENCIES))
-	@echo "Compilando: "
+	@echo "Compilando arquivo S: "
 	@echo "$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) -DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<"
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) -DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
 
@@ -65,7 +71,7 @@ $(TESTDIR): $(FIRMWARE_OBJS) $(TEST_OBJS) $(ELFS)
 build/%.elf: firmware/start.o $(TESTDIR)/%.o
 	mkdir -p $(basename $@)
 	@echo "[$(TESTDIR)] Using object files: $(CURRENT_DIR)/$(TESTDIR)/$*.o"
-	$(TOOLCHAIN_PREFIX)ld -T firmware/spiflash0.ld -m elf32lriscv -nostdlib -norelax firmware/start.o $(CURRENT_DIR)/$(TESTDIR)/$*.o -o $@
+	$(TOOLCHAIN_PREFIX)ld -T firmware/spiflash0.ld -m elf32lriscv -nostdlib -norelax firmware/start.o $(CURRENT_DIR)/$(TESTDIR)/$*.o -o $@ $(FIRMWARE_DIR)
 	mv $@ $(basename $@)/$(notdir $@)
 
 build/%.hex: build/%.elf
@@ -138,3 +144,8 @@ clean:
 
 
 .PHONY: clean
+
+## compiler
+# FIRMWARE_DIR = -L../FIRMWARE//TOOLCHAIN/riscv64-unknown-elf-gcc-8.3.0-2020.04.0-x86_64-linux-ubuntu14/riscv64-unknown-elf/lib/rv32i/ilp32 -L/media/Projeto/ASIC/ITA-CORES/femtorv32/FemtoRV/FIRMWARE//CRT -L/media/Projeto/ASIC/ITA-CORES/femtorv32/FemtoRV/FIRMWARE//LIBFEMTOGL -L/media/Projeto/ASIC/ITA-CORES/femtorv32/FemtoRV/FIRMWARE//LIBFEMTORV32 -L/media/Projeto/ASIC/ITA-CORES/femtorv32/FemtoRV/FIRMWARE//LIBFEMTOC -lfemtoGL -lfemtorv32 -lfemtoc -lm  -lsupc++ /media/Projeto/ASIC/ITA-CORES/femtorv32/FemtoRV/FIRMWARE//TOOLCHAIN/riscv64-unknown-elf-gcc-8.3.0-2020.04.0-x86_64-linux-ubuntu14/riscv64-unknown-elf/lib/rv32i/ilp32/libc.a /media/Projeto/ASIC/ITA-CORES/femtorv32/FemtoRV/FIRMWARE//TOOLCHAIN/riscv64-unknown-elf-gcc-8.3.0-2020.04.0-x86_64-linux-ubuntu14/riscv64-unknown-elf/lib/rv32i/ilp32/libm.a /media/Projeto/ASIC/ITA-CORES/femtorv32/FemtoRV/FIRMWARE//TOOLCHAIN/riscv64-unknown-elf-gcc-8.3.0-2020.04.0-x86_64-linux-ubuntu14/lib/gcc/riscv64-unknown-elf/8.3.0/rv32i/ilp32/libgcc.a
+# INCLUDES = ../FIRMWARE/LIBFEMTORV32/
+##
