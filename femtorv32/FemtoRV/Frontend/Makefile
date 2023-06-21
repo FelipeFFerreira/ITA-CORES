@@ -18,8 +18,8 @@ ifeq ($(TESTDIR), riscv-test-suite)
 DEPENDENCIES = riscv_test_macros.h compliance_test.h compliance_io.h
 else ifeq ($(TESTDIR), riscv-tests)
 DEPENDENCIES = riscv_test.h test_macros.h
-else
-DEPENDENCIES =
+else ifeq ($(TESTDIR), peripheral-tests)
+DEPENDENCIES = 
 #$(error Invalid TESTDIR: $(TESTDIR))
 endif
 
@@ -54,24 +54,27 @@ all: hex
 hex: $(patsubst build/%.elf,build/%.hex,$(ELFS_BUILD))
 
 firmware/start.o: firmware/start.S
-	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im$(subst C,c,$(COMPRESSED_ISA)) -o $@ $<
+	@echo "Compilando arquivo S: "
+	$(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX_C)as -march=rv32i -mabi=ilp32 $< -o $@  
+
+firmware/putchar.o: firmware/putchar.S
+	@echo "Compilando arquivo S: "
+	$(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX_C)as -march=rv32i -mabi=ilp32 $< -o $@  
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.c $(addprefix $(TESTDIR)/, $(DEPENDENCIES))
 	@echo "Compilando arquivo C: "
-	@echo "$(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX_C)gcc -I. -O2 -fno-pic -march=rv32i -mabi=ilp32 -fno-stack-protector -w -Wl,--no-relax -c $< $(INCLUDES)"
 	$(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX_C)gcc -I. -O2 -fno-pic -march=rv32i -mabi=ilp32 -fno-stack-protector -w -Wl,--no-relax -c $< $(INCLUDES) -o $@
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.S $(addprefix $(TESTDIR)/, $(DEPENDENCIES))
 	@echo "Compilando arquivo S: "
-	@echo "$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) -DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<"
 	$(TOOLCHAIN_PREFIX)gcc -c -mabi=ilp32 -march=rv32im -o $@ -DTEST_FUNC_NAME=$(notdir $(basename $<)) -DTEST_FUNC_TXT='"$(notdir $(basename $<))"' $(CFLAGS) -DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
 
 $(TESTDIR): $(FIRMWARE_OBJS) $(TEST_OBJS) $(ELFS)
 
-build/%.elf: firmware/start.o $(TESTDIR)/%.o
+build/%.elf: firmware/start.o firmware/putchar.o $(TESTDIR)/%.o
 	mkdir -p $(basename $@)
 	@echo "[$(TESTDIR)] Using object files: $(CURRENT_DIR)/$(TESTDIR)/$*.o"
-	$(TOOLCHAIN_PREFIX)ld -T firmware/spiflash0.ld -m elf32lriscv -nostdlib -norelax firmware/start.o $(CURRENT_DIR)/$(TESTDIR)/$*.o -o $@ $(FIRMWARE_DIR)
+	$(TOOLCHAIN_PREFIX)ld -T firmware/spiflash0.ld -m elf32lriscv -nostdlib -norelax firmware/start.o firmware/putchar.o $(CURRENT_DIR)/$(TESTDIR)/$*.o -o $@ $(FIRMWARE_DIR)
 	mv $@ $(basename $@)/$(notdir $@)
 
 build/%.hex: build/%.elf
