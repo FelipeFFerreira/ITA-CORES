@@ -243,7 +243,7 @@ void GeneratSimulationDevice()
 int DisplayLoad(char * opcao[NUM_OP]) 
 {
     int i, op;
-    printf("\n[ \nChoose the desired repository for designing and running the tests ]\n");
+    printf("\n[ Choose the desired repository for designing and running the tests ]\n");
     for (i = 0; i < NUM_OP; i++) {
         printf("%-30s\t\t\tOP:%d\n", opcao[i], i + 1);
     }
@@ -254,10 +254,10 @@ int DisplayLoad(char * opcao[NUM_OP])
 
 int Display()
 {
-    char * opcoes[NUM_OP] = { "Compliance Tests [riscv.org]",
-                              "RISC-V TEST SUITE [lowRISCV]",
-                              "Unit Tests", 
-                              "Peripheral tests",
+    char * opcoes[NUM_OP] = { "RISC-V compliance tests",
+                              "lowRISC compliance tests",
+                              "tests for peripherals", 
+                              "general programs",
                             };
     int op;
 

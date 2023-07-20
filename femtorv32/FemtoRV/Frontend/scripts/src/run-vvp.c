@@ -184,7 +184,7 @@ void ResultTest(char * test, char *string) {
     }
 
     if (pass)
-        fprintf(fptr_log, "%s: TESTE [%s]\t\t\t\t ------- [PASSOU]\n", time_str, test);
+        fprintf(fptr_log, "%s: TEST [ %-5s]\t------- [PASSED]\n", time_str, test);
     else 
-        fprintf(fptr_log, "%s: TESTE [%s]\t\t\t\t ------- [FALHOU]\n", time_str, test);
+        fprintf(fptr_log, "%s: TEST [ %-5s]\t------- [FAILED]\n", time_str, test);
 }
