@@ -33,19 +33,19 @@ int main()
     bool lp = false;
     char lp_count = 0;
     do {
-       
+
         ch = fgetc(fptr1);
         if (ch == '@' | lp == true)
         {
             printf("entrei\n");
             if (++lp_count < BYTE + 1)
                 lp = true;
-            else if (ch == '\n') 
+            else if (ch == '\n')
                 lp = false;
             printf("%c ", ch);
         }
         else {
-            printf("nao entrei\n");
+           // printf("nao entrei\n");
             if (ch != ' ' && ch != '\n') {
                 byte[cnt++] = ch;
             }
