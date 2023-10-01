@@ -17,13 +17,4 @@ RISC-V options used by the Femtorv32 or picoRV32 processor design.  The best way
 picoRV32 source from github (https://github.com/cliffordwolf/picorv32).
 
 
-## Iniciando
-### Pré-requisitos
-
-
-### Instalação
-Forneça passos claros para configurar o ambiente e instalar as dependências, por exemplo:
-
-1. Clone o repositório:
-   ```sh
-   git clone https://github.com/seu_usuario/seu_repositorio.git
+![SoC-RISC-V](block_diagram.png)
