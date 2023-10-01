@@ -1,4 +1,4 @@
-filename = divu_firmware_spi
+filename = flash_spi
 pcf_file = io.pcf
 
 ICELINK_DIR=$(shell df | grep iCELink | awk '{print $$6}')
