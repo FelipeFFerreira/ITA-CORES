@@ -34,14 +34,18 @@
 
 #define RVTEST_PASS			\
 	addi a0, zero, 100;   \
-	addi a1, zero, 'O';   \
-	addi a2, zero, 'K';   \
-	addi a3, zero, '\n';  \
+	addi a1, zero, 'S';   \
+	addi a2, zero, 'S';   \
+	addi a3, zero, 'A';  \
+	addi a4, zero, 'P';  \
 	sb a1, 0(a0);         \
 	addi a0, a0, 1;       \
 	sb a2, 0(a0);         \
 	addi a0, a0, 1;       \
 	sb a3, 0(a0);         \
+	addi a0, a0, 1; 	\
+	sb a4, 0(a0);         \
+	addi a0, a0, 1; 	\
   	lui t0, %hi(0x404000);       \
  	li t1, 0;                    \
   	sw t1, %lo(0x404000)(t0);     \
@@ -64,14 +68,18 @@
 
 #define RVTEST_FAIL			\
 	addi a0, zero, 100;   \
-	addi a1, zero, 'E';   \
-	addi a2, zero, 'R';   \
-	addi a3, zero, '\n';  \
+	addi a1, zero, 'L';   \
+	addi a2, zero, 'I';   \
+	addi a3, zero, 'A';  \
+	addi a4, zero, 'F';  \
 	sb a1, 0(a0);         \
 	addi a0, a0, 1;       \
 	sb a2, 0(a0);         \
 	addi a0, a0, 1;       \
 	sb a3, 0(a0);         \
+	addi a0, a0, 1; 	\
+	sb a4, 0(a0);         \
+	addi a0, a0, 1; 	\
   	lui t0, %hi(0x404000);       \
  	li t1, 0;                    \
   	sw t1, %lo(0x404000)(t0);     \
