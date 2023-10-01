@@ -17,4 +17,4 @@ RISC-V options used by the Femtorv32 or picoRV32 processor design.  The best way
 picoRV32 source from github (https://github.com/cliffordwolf/picorv32).
 
 
-![SoC-RISC-V](block_diagram.png)
+![SoC-RISC-V](docs/block_diagram.png)
