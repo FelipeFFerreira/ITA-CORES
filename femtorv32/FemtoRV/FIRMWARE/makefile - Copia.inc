@@ -135,10 +135,6 @@ FEMTORV32_LIBS_SMALL=-L$(RVTOOLCHAIN_LIB_DIR)\
 %.spiflash.elf: %.o $(RV_BINARIES) 
 	$(RVLD) $(RVLDFLAGS) -T$(FIRMWARE_DIR)/CRT/spiflash_$(BOARD).ld $< -o $@ $(FEMTORV32_LIBS) -lsupc++ $(RVGCC_LIB)
 
-# Generate a "spi elf", to be loaded from address 0x810000 
-%.env_spiflash.elf: %.o $(RV_BINARIES) 
-	$(RVLD) $(RVLDFLAGS) -T$(FIRMWARE_DIR)/CRT/spiflash0-Copia.ld $< -o $@ $(FEMTORV32_LIBS) -lsupc++ $(RVGCC_LIB)
-
 # Converts the ELF executable to flat binary form, ready to be sent to SPI flash.
 %.spiflash.bin: %.spiflash.elf
 	$(RVOBJCOPY) $< $@ -O binary
@@ -176,7 +172,7 @@ FEMTORV32_LIBS_SMALL=-L$(RVTOOLCHAIN_LIB_DIR)\
 root: all
 
 clean:
-	rm -f *.exe *~ *.a *.bin *.list
+	rm -f *.o *.elf *.hex *.exe *~ *.a *.bin *.list
 
 #Generating the conversion utility for hex files
 
