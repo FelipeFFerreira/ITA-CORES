@@ -1,45 +1,28 @@
-SoC RISC-V: An ASIC implementation of the FEMTORV32
-===============================================================
+# SoC RISC-V: An ASIC Implementation of the FEMTORV32
 Designed by Felipe Ferreira Nascimento, São Paulo, Brazil.
 
-Overview
---------
-The RISC-V architecture, an open-source ISA with a Berkeley Software Distribution (BSD) license, has been gaining global recognition in both academia and the market. The reduced and expandable instruction set of this architecture allows for the implementation of versatile microarchitectures, suitable for both specific and general-purpose applications. This study is dedicated to the full physical implementation of an SoC based on the RISC-V architecture, using the FemtoRV32 project as a foundation. The Quark core, which executes the base RV32I instruction set, was the choice for this implementation. This work is among the first to complete a full physical implementation of the Quark core, offering a validated microarchitecture that can be utilized in future ASIC projects. The initial implementation was performed on a low-cost iCESugar-nano FPGA and subsequently transposed to a 180 nm CMOS technology. The results obtained show that the Quark core is a viable option for economical microprocessor projects, operating at frequencies of up to 120 MHz. One of the highlights of this study is the implementation of an automated testing environment, providing a validation framework that spans from the front-end phase to post-layout. With the chip already in hand, future power characterization tests and other analyses are planned, with the aim of evaluating the SoC's strengths and areas for improvement. This work aims to be a valuable resource for future research in RISC-V-based implementations.
+## Overview
+The RISC-V architecture, an open-source ISA under a Berkeley Software Distribution (BSD) license, is receiving global acclaim in academia and the industry. It offers a reduced and expandable instruction set, allowing the creation of versatile microarchitectures for both specific and general-purpose applications. This study revolves around the full physical implementation of an SoC using the RISC-V architecture, specifically building upon the FemtoRV32 project. We chose the Quark core, executing the base RV32I instruction set, for this implementation, marking one of the initial full physical implementations of this core. It provides a validated microarchitecture suitable for future ASIC projects. The project underwent its initial implementation on a low-cost iCESugar-nano FPGA before transitioning to a 180 nm CMOS technology. The outcomes indicate that the Quark core is a feasible alternative for cost-efficient microprocessor projects, operating at frequencies up to 120 MHz. This study emphasizes the introduction of an automated testing environment that spans from the front-end phase to post-layout, promising thorough validation. With the physical chip now available, we are planning further power characterization tests and analyses to identify areas of improvement in the SoC. 
 
-FemtoRV32: https://github.com/BrunoLevy/learn-fpga/tree/master/FemtoRV
-Copyright (c) 2020-2021, Bruno Levy
+[FemtoRV32 Project](https://github.com/BrunoLevy/learn-fpga/tree/master/FemtoRV)  
+Copyright (c) 2020-2021, Bruno Levy  
 All rights reserved.
 
-##
-The requirements for simulating the SoC are:  iverilog
-(iverilog.icarus.com), and the RISC-V gcc configured for the
-RISC-V options used by the Femtorv32 or picoRV32 processor design.  The best way to obtain the correct gcc cross-compiler is to install the
-picoRV32 source from github (https://github.com/cliffordwolf/picorv32).
+## Requirements
+To simulate the SoC, the following are required:  
+- [Iverilog](http://iverilog.icarus.com)
+- RISC-V GCC configured for the RISC-V options used by the Femtorv32 or picoRV32 processor design.
 
+To acquire the correct GCC cross-compiler, install the picoRV32 source from [GitHub](https://github.com/cliffordwolf/picorv32).
 
-######
-######
-######
-######
-######
-######
-ITA-CORES
-----------
-RISC-V and Open Source have been gaining increasingly more prominence in the global market. With the goal of joining this global topic and with a focus on more accessible and innovative technologies, ITA initiated the “ITA CORES” initiative in 2022, aiming to conduct research in design and manufacturing of 
-digital processors based on the RISC-V ISA.
-######
+## ITA-CORES
+RISC-V and Open Source are gaining substantial traction globally, prompting ITA to launch the "ITA CORES" initiative in 2022. It focuses on designing and manufacturing digital processors based on the RISC-V ISA, aiming to join global discussions on innovative and accessible technologies.  
 ![ITA.CORES](docs/ITA_CORES_LOGO_OF.png)
-###
 
-
-
-SoC RISC-V
----------
-######
-The objective of this work was to implement and physically validate a RISC-V core based on the FemtoRV32 project, having chosen the Quark core to implement the base set RV32I due to its compact microarchitecture, which is ideal for low-cost implementations.
-
-The main focus is to make the microarchitecture suitable for ASIC projects, with the physical implementation allowing for more in-depth analysis and considering the actual design of a SoC (System-on-a-Chip). It is believed that the validation of this project will serve as a reference for future projects, encouraging the development of specific applications and serving as a valuable educational tool for the expansion of an open source ISA (Instruction Set Architecture).
-
-This work explored the main methodologies and tools necessary for a complex digital flow, with the objective of effectively implementing and validating the core. It is anticipated that the results and the knowledge acquired will contribute significantly to the community and will promote advancements in the field of processor architecture.
-######
+## SoC RISC-V
+This work aimed to implement and physically validate a RISC-V core based on the FemtoRV32 project, leveraging the Quark core due to its compact microarchitecture, suitable for low-cost implementations. The primary goal is to optimize the microarchitecture for ASIC projects, ensuring it serves as a reference for future projects and acting as a valuable educational resource for expanding an open-source ISA (Instruction Set Architecture).  
 ![SoC-RISC-V](docs/block_diagram.png)
+
+### Methodologies and Tools
+This project explored crucial methodologies and tools needed for a complex digital flow, aiming for the effective implementation and validation of the core. The insights and results obtained are anticipated to significantly contribute to the community and spur advancements in processor architecture.
+
