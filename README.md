@@ -24,6 +24,13 @@ RISC-V and Open Source have been gaining increasingly more prominence in the glo
 ![ITA.CORES](docs/ITA_CORES_LOGO_OF.png)
 ###
 
+
+
 SoC RISC-V
-----
+---------
+The objective of this work was to implement and physically validate a RISC-V core based on the FemtoRV32 project, having chosen the Quark core to implement the base set RV32I due to its compact microarchitecture, which is ideal for low-cost implementations.
+
+The main focus is to make the microarchitecture suitable for ASIC projects, with the physical implementation allowing for more in-depth analysis and considering the actual design of a SoC (System-on-a-Chip). It is believed that the validation of this project will serve as a reference for future projects, encouraging the development of specific applications and serving as a valuable educational tool for the expansion of an open source ISA (Instruction Set Architecture).
+
+This work explored the main methodologies and tools necessary for a complex digital flow, with the objective of effectively implementing and validating the core. It is anticipated that the results and the knowledge acquired will contribute significantly to the community and will promote advancements in the field of processor architecture.
 ![SoC-RISC-V](docs/block_diagram.png)
