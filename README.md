@@ -1,46 +1,70 @@
-# SoC RISC-V: An ASIC Implementation of the FEMTORV32
-### Designed by Felipe Ferreira Nascimento, São Paulo, Brazil.
+# 🚀 SoC RISC-V: An ASIC Implementation of the FEMTORV32
+#### 🛠️ Designed by Felipe Ferreira Nascimento, São Paulo, Brazil.
 
 ---
-## Overview 🌐
-The RISC-V architecture is an open-source ISA under a Berkeley Software Distribution (BSD) license, enjoying global recognition in academia and the industry due to its reduced and expandable instruction set. This project focuses on the full physical implementation of an SoC using the FemtoRV32 project as a foundation, presenting a validated microarchitecture suitable for future ASIC projects.
+## 🌐 Overview
+The RISC-V architecture, under a Berkeley Software Distribution (BSD) license, is revered globally in academia and the industry. This project aims at a full physical implementation of an SoC using the FemtoRV32 project, offering a microarchitecture ready for future ASIC projects.
 
 🔗 [FemtoRV32 Project](https://github.com/BrunoLevy/learn-fpga/tree/master/FemtoRV)
-- Copyright (c) 2020-2021, Bruno Levy
-- All rights reserved.
+- 📄 Copyright (c) 2020-2021, Bruno Levy
+- 📜 All rights reserved.
 
 ---
 ## 🛠 Requirements
+To simulate the SoC, the following tools are needed:
 - [Iverilog](http://iverilog.icarus.com)
 - RISC-V GCC configured for Femtorv32 or picoRV32 processor design.
 
-> 💡 To acquire the correct GCC cross-compiler, install the picoRV32 source from [GitHub](https://github.com/cliffordwolf/picorv32).
+💡 **Tip:** Acquire the correct GCC cross-compiler by installing the picoRV32 source from [GitHub](https://github.com/cliffordwolf/picorv32).
 
 ---
 ## 🌟 ITA-CORES Initiative
-RISC-V and Open Source are forging paths in global innovation. ITA, recognizing this shift, launched the "ITA CORES" initiative, focusing on the design and manufacturing of digital processors based on the RISC-V ISA.
+Acknowledging the global advancements in RISC-V and Open Source, ITA introduced the "ITA CORES" initiative focusing on designing and manufacturing digital processors based on the RISC-V ISA.
 ![ITA.CORES](docs/ITA_CORES_LOGO_OF.png)
 
 ---
 ## 🧠 SoC RISC-V Implementation
-We aimed to implement and physically validate the Quark core based on the FemtoRV32 project due to its compact microarchitecture, ideal for low-cost implementations.
+This project aimed to implement and physically validate the Quark core, ideal due to its compact microarchitecture for low-cost implementations.
 ![SoC-RISC-V](docs/block_diagram.png)
 
 ### 🛠 Methodologies and Tools
-Explored were crucial methodologies and tools needed for a complex digital flow, aimed at the effective implementation and validation of the core.
+We explored essential methodologies and tools necessary for a complex digital flow, targeting the efficient implementation and validation of the core.
 ![Development Phases](docs/steps.png)
 ![Tap-out](docs/tapout.png)
 
 ---
-## 🛠 Developed Framework
-A framework was created to verify the conformity of the Quark core with the ISA RISC-V specifications, including various tests ensuring the validity and efficacy of the RISC-V SoC implementation.
+## 📚 Framework Details
+In digital chip development, optimizations often lead to modifications in the original design, which, although intended for improvements, can introduce errors or inconsistencies.
+
+### 🛠 Developed Framework
+This project developed a framework to verify the conformity of the Quark core with the ISA RISC-V specifications.
 ![Framework](docs/diagrama_fluxo_test.png)
 ![Purpose of the Framework](docs/fluxo_automatizado.png)
 
-### 📚 Framework Details
-In digital chip development, the original representation of the design is often modified during various optimization stages. However, even minor modifications can introduce errors or inconsistencies, threatening the correctness and reliability of the design.
+#### 🌀 Functioning and steps of the framework
+The framework operates through several stages, managing test files, setting up test environments, compiling with the RISC-V toolchain, organizing compiled files, preparing instructions for simulation, automated test execution and validation, and finally, executing tests on a physical device.
+
+1. **Stage 1: Test File Management**
+   - System identifies and manages the test files, which are stored in five main repositories, supporting test files written in both C language and RISC-V assembly.
+
+2. **Stage 2: Test Environment Setup**
+   - Application prepares the automated testing environment through a series of specialized scripts.
+
+3. **Stage 3: Compilation with the RISC-V Toolchain**
+   - The application uses the RISC-V toolchain to convert the test files into executable machine code.
+
+4. **Stage 4: Organization of Compiled Files**
+   - The files and their dependencies are organized in specific directories for each test.
+
+5. **Stage 5: Preparation of Instructions for Simulation**
+   - The resulting .elf files are converted into instructions in hexadecimal format suitable for digital simulators used in the project.
+
+6. **Stage 6: Automated Test Execution and Validation**
+   - This stage involves the execution and automated validation of each test, providing visual feedback on the test status.
+
+7. **Stage 7: Execution of Tests on Physical Device**
+   - This stage involves setting up and executing the tests on hardware, such as an FPGA or physical chip.
 
 ---
 ### 💌 Feedback & Contributions
-Feel free to send your feedback and contribute to the project. Every piece of advice and contribution is highly appreciated!
-
+Your feedback and contributions are highly welcomed and appreciated! Feel free to improve any part of this project and submit your ideas and enhancements.
