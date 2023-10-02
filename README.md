@@ -18,9 +18,12 @@ picoRV32 source from github (https://github.com/cliffordwolf/picorv32).
 
 
 ##
-![ITA.CORES](docs/ITA_CORES_LOGO_OF.png)
-
+ITA-CORES
+----------
 RISC-V and Open Source have been gaining increasingly more prominence in the global market. With the goal of joining this global topic and with a focus on more accessible and innovative technologies, ITA initiated the “ITA CORES” initiative in 2022, aiming to conduct research in design and manufacturing of digital processors based on the RISC-V ISA.
+![ITA.CORES](docs/ITA_CORES_LOGO_OF.png)
+----
 
-##
+SoC RISC-V
+----
 ![SoC-RISC-V](docs/block_diagram.png)
