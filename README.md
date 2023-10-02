@@ -17,10 +17,13 @@ RISC-V options used by the Femtorv32 or picoRV32 processor design.  The best way
 picoRV32 source from github (https://github.com/cliffordwolf/picorv32).
 
 
-##
+######
+######
 ITA-CORES
 ----------
-RISC-V and Open Source have been gaining increasingly more prominence in the global market. With the goal of joining this global topic and with a focus on more accessible and innovative technologies, ITA initiated the “ITA CORES” initiative in 2022, aiming to conduct research in design and manufacturing of digital processors based on the RISC-V ISA.
+RISC-V and Open Source have been gaining increasingly more prominence in the global market. With the goal of joining this global topic and with a focus on more accessible and innovative technologies, ITA initiated the “ITA CORES” initiative in 2022, aiming to conduct research in design and manufacturing of 
+digital processors based on the RISC-V ISA.
+######
 ![ITA.CORES](docs/ITA_CORES_LOGO_OF.png)
 ###
 
@@ -34,4 +37,5 @@ The objective of this work was to implement and physically validate a RISC-V cor
 The main focus is to make the microarchitecture suitable for ASIC projects, with the physical implementation allowing for more in-depth analysis and considering the actual design of a SoC (System-on-a-Chip). It is believed that the validation of this project will serve as a reference for future projects, encouraging the development of specific applications and serving as a valuable educational tool for the expansion of an open source ISA (Instruction Set Architecture).
 
 This work explored the main methodologies and tools necessary for a complex digital flow, with the objective of effectively implementing and validating the core. It is anticipated that the results and the knowledge acquired will contribute significantly to the community and will promote advancements in the field of processor architecture.
+######
 ![SoC-RISC-V](docs/block_diagram.png)
