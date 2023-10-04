@@ -184,7 +184,7 @@ Analysis of IR drop. When analyzing the figure, it is observed that the maximum 
 ![result_sintese_fisica](docs/result_sintese_fisica.png)
 
 ---
-## 🛠 Chip completion
+## ✅ Chip completion
 ![tapout](docs/tapout.png)
 
 Tap-Out
@@ -243,7 +243,7 @@ To simulate the SoC, the following tools are needed:
 
    ![File Structure](docs/arquivos.png)
 
-   Following the test's completion, the resulting log file can be found in `../build`. Utility and linker files for the processor are located in `../firmware`, while intermediary files for test execution are in `../test_repository_name/base_testbench`. Where 'teste_repository_name' refers to the name of the test in question.
+   Following the test's completion, the resulting log file can be found in `../build`. Utility and linker files for the processor are located in `../firmware`, while intermediary files for test execution are in `../test_repository_name/base_testbench`. Where 'teste_repository_name' refers to the name of the repository that stores the tests in question.
 
    ![File log](docs/log_full.png)
 
@@ -260,6 +260,19 @@ To simulate the SoC, the following tools are needed:
 
    ![riscv-test-suite references](docs/lowrisc_testes.png)
 
+---
+**🛠️ Execution of Tests on Physical Device**
+   To evaluate the SoC in a physical environment, the compliance tests from the official RISC-V repository were used. The SoC was synthesized on the icesugar-nano FPGA.
+
+   In this way, all instructions and procedures carried out in the simulation environment are replicated and executed in the physical environment, ensuring the integrity of all original files.
+
+   During execution, visual feedback is provided through the D1 pin, which corresponds to the PWM output. This feedback is indicated by a yellow LED, as illustrated in the subsequent figure. The red LED signals a write operation to the device's flash memory. When a test is successful, the yellow LED flashes (toggle effect) at a frequency of 1 Hz; in case of failure, it flashes at 2 Hz. This visual feedback offers users a clear and immediate understanding of the test status.
+
+   Currently, the automated support for executing all tests from a given repository is primarily focused on the official tests of RISC-V. However, all tests produce a file compatible with the 'SPI Test Interface', which can be easily adapted for execution on a physical device. Details of this application will be presented in the following examples.
+
+   ![riscv-test-suite references](docs/device.gif)
+
+   ![riscv-test-suite references](docs/rrun_device.gif)
 
 ---
 ### 💌 Feedback & Contributions
