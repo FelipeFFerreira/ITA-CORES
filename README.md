@@ -65,6 +65,67 @@ The framework operates through several stages, managing test files, setting up t
 7. **Stage 7: Execution of Tests on Physical Device**
    - This stage involves setting up and executing the tests on hardware, such as an FPGA or physical chip.
 
+
+
+## 🛠 Framework Execution Guide
+
+### 📁 Directory Preparation
+
+1. **Initial Setup**  
+   Navigate to the directory: `femtorv32/FemtoRV/Frontend/scripts`. This repository stores the main codes used in the development of the framework.
+
+2. **Framework Construction**  
+   In your terminal (ensure you're in the path indicated above), type:  `sudo make all ENV_FRONTEND_SIGNOFF=1`
+   This command constructs the framework, primarily considering the environment for simulation execution. This step encompasses the compilation of files and dependencies essential for the framework's execution.
+   Upon completion, a `bin` folder will be created in the `/scripts/bin` directory, storing the compiled binaries.
+
+### 🖥 Framework Interface
+   
+   Upon the successful setup, running the framework will display a user interface showcasing the available functions as outlined in the [Functioning and steps of the framework](#-functioning-and-steps-of-the-framework) section.
+
+   ![Framework Interface](docs/janela_inicial.png)
+
+   For a practical demonstration, the image below showcases the interface when executing the official RISC-V conformity tests, i.e., option 1.
+
+   ![Conformity Test Example](docs/etapas.png)
+
+### 📂 File Organization & Test Execution
+
+   After test execution, you can locate the generated files in the `../build` directory. This directory organizes each test individually, identified by their respective names.
+
+   ![Directory Structure](docs/diretorios.png)
+
+   When accessing a specific test directory, the following file structure can be observed:
+
+   - `.bin` - Binary file for physical devices.
+   - `.elf` - Executable and linkable file.
+   - `.hex` - Executable instruction file.
+   - `_firmware.hex` - Formatted file for digital simulators.
+   - `_firmware_spi.v` - SPI interface file.
+   - `testbench_XD.vcd` - Resulting simulation file.
+
+   For example, the `ADD` instruction test might present:
+
+   ![File Structure](docs/arquivos.png)
+
+   Following the test's completion, the resulting log file can be found in `../build`. Utility and linker files for the processor are located in `../firmware`, while intermediary files for test execution are in `../test_repository_name/base_testbench`. Where 'teste_repository_name' refers to the name of the test in question.
+
+   ![File log](docs/log_full.png)
+
+
+
+   For execution tests related to the LowRISC project, consider:
+
+   1. Navigate to the directory: `femtorv32/FemtoRV/Frontend/scripts`.
+   2. In your terminal, type: `sudo make all ENV_FRONTEND_SIGNOFF=1`.
+   3. Select option 2. The necessary dependencies will be verified.
+   4. The following image illustrates a sample execution, where several operations are performed. Ultimately, a signature is generated and compared with the reference signature found in `../riscv-test-suite/references`. Test coverages can also be located in this repository.
+
+   ![riscv-test-suite references](docs/lowrisc_inicio.png)
+
+   ![riscv-test-suite references](docs/lowrisc_testes.png)
+
+
 ---
 ### 💌 Feedback & Contributions
 Your feedback and contributions are highly welcomed and appreciated! Feel free to improve any part of this project and submit your ideas and enhancements.
