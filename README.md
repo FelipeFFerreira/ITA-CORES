@@ -152,7 +152,6 @@ Phases of the digital flow carried out in the RISC-V SoC design. The image illus
 
 Clock tree in the RISC-V SoC design. The figure showcases the balanced clock tree developed for the RISC-V SoC. The symmetry and regularity of the structure stand out, which are typical attributes of a balanced clock tree. This optimized configuration ensures that the design operates at the specified frequency, meeting timing constraints.
 
----
 
 ---
 ## 🛠 Simulation examples
@@ -166,6 +165,33 @@ PWM peripheral gate level simulation
 ---
 ![uart](docs/uart_2.png)
 Simulation of the UART peripheral carried out in the Icarus Verilog software. The segment shown was taken from the simulation of word sending via UART. For simplification purposes, the image focuses on the transmission interval of the ASCII character 'a', which corresponds to the binary value '01100001'. A sampling time of approximately 8.63 μs is observed and a total send time of approximately 79 μs for the transmission of the character through the TXD output pin of the SoC.
+
+---
+## 🛠 Physical Implementation Results
+![design_signoff](docs/design_signoff.png)
+
+---
+![uart](docs/timing_sintese.png)
+
+---
+![uart](docs/timing_2.png)
+
+---
+![ir_drop_2](docs/ir_drop_2.png)
+Analysis of IR drop. When analyzing the figure, it is observed that the maximum voltage drop of the RISC-V SoC is approximately 7.15 mW. The analysis was carried out specifying the worst-case at the nominal voltage of 1.62 V, as specified by the technology. The typical acceptable value is 1.8 V, and the maximum value is 1.98 V. Therefore, the voltage drop is relatively small, considering that the analysis frequency is 100 MHz for the worst-case corner.
+
+---
+![result_sintese_fisica](docs/result_sintese_fisica.png)
+
+---
+## 🛠 Chip completion
+![result_sintese_fisica](docs/tapout.png)
+
+---
+![result_sintese_fisica](docs/package.png)
+
+---
+![result_sintese_fisica](docs/pcb.png)
 
 ## 🛠 Requirements
 To simulate the SoC, the following tools are needed:
