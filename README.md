@@ -148,6 +148,25 @@ Structure and organization adopted: (1) Technology files; (2) Design tests and v
 Phases of the digital flow carried out in the RISC-V SoC design. The image illustrates the evolution of the design throughout the main stages of the physical implementation performed. In the floorplanning stage, the rows are outlined based on the sites defined by the technology, as well as the positioning of the pad cells and corners. During the Power Planning phase, power rails and the Pad Ring are identified. The Post-Placement phase displays the design state after the cell placement and routing. Lastly, the final part of the figure presents the design after the routing stage, taking into account the optimizations made.
 
 ---
+![steps](docs/clcok_tree.png)
+
+Clock tree in the RISC-V SoC design. The figure showcases the balanced clock tree developed for the RISC-V SoC. The symmetry and regularity of the structure stand out, which are typical attributes of a balanced clock tree. This optimized configuration ensures that the design operates at the specified frequency, meeting timing constraints.
+
+---
+
+---
+## 🛠 Simulation examples
+![Framework Interface](docs/spi.png)
+SPI Teste Interface
+
+---
+![pwm](docs/gate_level_simul_150MHZ.png)
+PWM peripheral gate level simulation
+
+---
+![uart](docs/uart_2.png)
+Simulation of the UART peripheral carried out in the Icarus Verilog software. The segment shown was taken from the simulation of word sending via UART. For simplification purposes, the image focuses on the transmission interval of the ASCII character 'a', which corresponds to the binary value '01100001'. A sampling time of approximately 8.63 μs is observed and a total send time of approximately 79 μs for the transmission of the character through the TXD output pin of the SoC.
+
 ## 🛠 Requirements
 To simulate the SoC, the following tools are needed:
 - [Iverilog](http://iverilog.icarus.com)
