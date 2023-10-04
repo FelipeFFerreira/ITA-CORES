@@ -159,7 +159,7 @@ Clock tree in the RISC-V SoC design. The figure showcases the balanced clock tre
 SPI Teste Interface
 
 ---
-![pwm](docs/gate_level_simul_150MHZ.png)
+![pwm_](docs/gate_level_simul_150MHZ.png)
 pwm peripheral gate level simulation
 
 ---
@@ -186,6 +186,7 @@ Analysis of IR drop. When analyzing the figure, it is observed that the maximum 
 ---
 ## 🛠 Chip completion
 ![tapout](docs/tapout.png)
+
 Tap-Out
 ---
 ![package](docs/package.png)
@@ -217,13 +218,11 @@ To simulate the SoC, the following tools are needed:
 
 ### 🖥 Framework Interface
    
-   Upon the successful setup, running the framework will display a user interface showcasing the available functions as outlined in the [Functioning and steps of the framework](#-functioning-and-steps-of-the-framework) section.
-
-   ![Framework Interface](docs/janela_inicial.png)
+   Upon the successful setup, running the framework will display a user interface showcasing the available functions.
 
    For a practical demonstration, the image below showcases the interface when executing the official RISC-V conformity tests, i.e., option 1.
 
-   ![Conformity Test Example](docs/etapas.png)
+   ![Conformity Test Example](docs/init_framework.gif)
 
 ### 📂 File Organization & Test Execution
 
