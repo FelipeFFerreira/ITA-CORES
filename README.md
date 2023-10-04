@@ -262,6 +262,7 @@ To simulate the SoC, the following tools are needed:
 
 ---
 **🛠️ Execution of Tests on Physical Device**
+   
    To evaluate the SoC in a physical environment, the compliance tests from the official RISC-V repository were used. The SoC was synthesized on the icesugar-nano FPGA.
 
    In this way, all instructions and procedures carried out in the simulation environment are replicated and executed in the physical environment, ensuring the integrity of all original files.
