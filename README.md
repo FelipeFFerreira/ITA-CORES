@@ -156,7 +156,6 @@ In digital chip development, optimizations often lead to modifications in the or
 ### 🛠 Developed Framework
 This project developed a framework to verify the conformity of the Quark core with the ISA RISC-V specifications.
 ![Framework](docs/diagrama_fluxo_test.png)
-![Purpose of the Framework](docs/fluxo_automatizado.png)
 
 #### 🌀 Functioning and steps of the framework
 The framework operates through several stages, managing test files, setting up test environments, compiling with the RISC-V toolchain, organizing compiled files, preparing instructions for simulation, automated test execution and validation, and finally, executing tests on a physical device.
