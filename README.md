@@ -160,7 +160,7 @@ SPI Teste Interface
 
 ---
 ![pwm](docs/gate_level_simul_150MHZ.png)
-PWM peripheral gate level simulation
+pwm peripheral gate level simulation
 
 ---
 ![uart](docs/uart_2.png)
@@ -185,13 +185,13 @@ Analysis of IR drop. When analyzing the figure, it is observed that the maximum 
 
 ---
 ## 🛠 Chip completion
-![result_sintese_fisica](docs/tapout.png)
+![tapout](docs/tapout.png)
+Tap-Out
+---
+![package](docs/package.png)
 
 ---
-![result_sintese_fisica](docs/package.png)
-
----
-![result_sintese_fisica](docs/pcb.png)
+![pcb](docs/pcb.png)
 
 ## 🛠 Requirements
 To simulate the SoC, the following tools are needed:
@@ -265,3 +265,7 @@ To simulate the SoC, the following tools are needed:
 ---
 ### 💌 Feedback & Contributions
 Your feedback and contributions are highly welcomed and appreciated! Feel free to improve any part of this project and submit your ideas and enhancements.
+
+---
+Copyright (c) 2022-2023 Felipe Ferreira Nascimento
+São Paulo, Brazil
