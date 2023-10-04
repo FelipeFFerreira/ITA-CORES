@@ -66,8 +66,7 @@ In the development of a digital chip, it's common for the original design repres
 In this context, a regression testing strategy was adopted, employing the same tests at different development stages to ensure recent modifications do not compromise already validated functionalities. This method is versatile, applicable from the early front-end simulation phases to the more advanced back-end stages, such as gate-level simulations in the signoff stage and post-silicon validation.
 
 ---
-### 🌀 Functioning and steps of the framework
-
+## 🌀 Functioning and steps of the framework
 ![Purpose of the Framework](docs/diagrama_fluxo_test.png)
 
 **Stage 1: Test File Management** - The system identifies and manages the test files to be applied. These files are stored in five main repositories, and the system supports test files written in both C language and RISC-V assembly. Below, the directories are described:
@@ -113,8 +112,6 @@ The aim of this stage is to prepare the instructions for the simulation stage, e
 
 During test execution, visual feedback is provided through the D1 pin, corresponding to the PWM output. A successful test triggers a toggle effect on this pin at a frequency of 1 Hz, while a failed test results in a frequency of 2 Hz. This mechanism facilitates user interaction by providing an immediate visual signal of the test status.
 
-All results are recorded in a log file, as described in Appendix [reference]. Additionally, .vcd files are generated for each test, facilitating detailed visualization of the circuit behavior during the test, as well as system debugging and analysis.
-
 ---
 **Stage 7: Execution of Tests on Physical Device** - This stage involves setting
 
@@ -136,6 +133,21 @@ The "SPI Test Interface," developed in Verilog for this work, serves as a hardwa
 This component, integrated into the testing environment, allows the SoC to execute instructions directly at any development stage. The first file can symbolize a netlist of the RISC-V SoC or the physical implementation, proving useful in gate-level simulations and can also represent the RTL representation of the SoC. The module instantiates the SoC, maps instructions to the simulation environment, and generates ".VCD" files for simulation (e.g., using the Icarus software). Alternatively, it can be synthesized on an FPGA and communicate via SPI with the SoC (chip) to execute instructions.
 
 ---
+## 🛠 Physical Implementation
+![Physical Implementation](docs/fases_implementacao.png)
+Typical phases in the process of creating a digital chip, applied in the physical implementation of the RISC-V SoC. The process begins with the circuit description and functional simulations to verify the circuit's behavior. Subsequently, the synthesis phase is approached, where new functionality and timing checks are conducted. Before starting the physical implementation, an MMMC (Multi-Mode Multi-Corner) configuration file with a ".view" extension is defined. Following this, the netlist is imported, initiating the floorplan, padring, and power planning phases. Subsequent steps include cell placement, clock tree synthesis (CTS), routing, and post-routing. During these phases, new timing checks are conducted, filler cells are added in the core region, and various analyses such as connectivity and DRC are undertaken, culminating in the signoff stage.
+
+---
+![Physical Implementation](docs/fluxograma_fisico.png)
+
+Structure and organization adopted: (1) Technology files; (2) Design tests and validation; (3) Synthesis and associated files; (4) Layout representation and corresponding files; (5) Gate-level simulation validation and related files.
+
+---
+![steps](docs/steps.png)
+
+Phases of the digital flow carried out in the RISC-V SoC design. The image illustrates the evolution of the design throughout the main stages of the physical implementation performed. In the floorplanning stage, the rows are outlined based on the sites defined by the technology, as well as the positioning of the pad cells and corners. During the Power Planning phase, power rails and the Pad Ring are identified. The Post-Placement phase displays the design state after the cell placement and routing. Lastly, the final part of the figure presents the design after the routing stage, taking into account the optimizations made.
+
+---
 ## 🛠 Requirements
 To simulate the SoC, the following tools are needed:
 - [Iverilog](http://iverilog.icarus.com)
@@ -143,43 +155,6 @@ To simulate the SoC, the following tools are needed:
 
 💡 **Tip:** Acquire the correct GCC cross-compiler by installing the picoRV32 source from [GitHub](https://github.com/cliffordwolf/picorv32).
 
-
-### 🛠 Methodologies and Tools
-We explored essential methodologies and tools necessary for a complex digital flow, targeting the efficient implementation and validation of the core.
-![Development Phases](docs/steps.png)
-![Tap-out](docs/tapout.png)
-
----
-## 📚 Framework Details
-In digital chip development, optimizations often lead to modifications in the original design, which, although intended for improvements, can introduce errors or inconsistencies.
-
-### 🛠 Developed Framework
-This project developed a framework to verify the conformity of the Quark core with the ISA RISC-V specifications.
-![Framework](docs/diagrama_fluxo_test.png)
-
-#### 🌀 Functioning and steps of the framework
-The framework operates through several stages, managing test files, setting up test environments, compiling with the RISC-V toolchain, organizing compiled files, preparing instructions for simulation, automated test execution and validation, and finally, executing tests on a physical device.
-
-1. **Stage 1: Test File Management**
-   - System identifies and manages the test files, which are stored in five main repositories, supporting test files written in both C language and RISC-V assembly.
-
-2. **Stage 2: Test Environment Setup**
-   - Application prepares the automated testing environment through a series of specialized scripts.
-
-3. **Stage 3: Compilation with the RISC-V Toolchain**
-   - The application uses the RISC-V toolchain to convert the test files into executable machine code.
-
-4. **Stage 4: Organization of Compiled Files**
-   - The files and their dependencies are organized in specific directories for each test.
-
-5. **Stage 5: Preparation of Instructions for Simulation**
-   - The resulting .elf files are converted into instructions in hexadecimal format suitable for digital simulators used in the project.
-
-6. **Stage 6: Automated Test Execution and Validation**
-   - This stage involves the execution and automated validation of each test, providing visual feedback on the test status.
-
-7. **Stage 7: Execution of Tests on Physical Device**
-   - This stage involves setting up and executing the tests on hardware, such as an FPGA or physical chip.
 
 
 
