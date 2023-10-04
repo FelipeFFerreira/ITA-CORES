@@ -59,25 +59,30 @@ Additionally, a second test set, originating from the lowRISC project [lowriscv]
 
 
 ---
-### 🛠 Development of the Framework for Test Execution and Validation
+## 🛠 Development of the Framework for Test Execution and Validation
 Automated testing is crucial, offering significant advantages over manual methods. It not only reduces the need for human intervention in repetitive tests, allowing designers to focus on more complex tasks but also speeds up test execution and ensures its consistency, mitigating human errors.
 In this project, a framework was developed, creating a testing environment aimed at verifying the Quark core's compliance with the RISC-V ISA specifications. This environment, detailed in the figure below, encompasses not only compliance tests but also other tests mentioned later, ensuring the validity and efficacy of the RISC-V SoC implementation. The system was structured in various stages and components, simplifying the execution of the tests and ensuring accurate and reliable results.
 In the development of a digital chip, it's common for the original design representation to be modified throughout the process. These modifications arise from various optimization stages aiming to enhance system performance, reduce power consumption, and minimize the chip's physical size, among other goals. However, even minor changes might inadvertently introduce errors or inconsistencies, jeopardizing the design's correctness and reliability.
 In this context, a regression testing strategy was adopted, employing the same tests at different development stages to ensure recent modifications do not compromise already validated functionalities. This method is versatile, applicable from the early front-end simulation phases to the more advanced back-end stages, such as gate-level simulations in the signoff stage and post-silicon validation.
 
 ---
-#### 🌀 Functioning and steps of the framework
+### 🌀 Functioning and steps of the framework
 
-![Purpose of the Framework](docs/fluxo_automatizado.png)
+![Purpose of the Framework](docs/diagrama_fluxo_test.png)
 
 **Stage 1: Test File Management** - The system identifies and manages the test files to be applied. These files are stored in five main repositories, and the system supports test files written in both C language and RISC-V assembly. Below, the directories are described:
 
 1. **RISC-V Compliance Test Repository:** This repository contains files and dependencies exclusively intended for RISC-V compliance tests, as specified in the official RISC-V test repository.
+
 2. **LowRISC Compliance Test Repository:** This repository contains compliance tests that complement the RISC-V compliance tests and address specifics of the LowRISC project.
+
 3. **Peripheral and Communication Test Firmware Repository:** This repository houses firmware intended for peripheral testing.
+
 4. **Unit Test File Repository:** This repository contains test files intended for general or unit tests.
+
 5. **General Program Repository:** This repository stores programs for demonstrations, benchmarks, among others.
 
+---
 **Stage 2: Test Environment Setup** - At this stage, the application prepares the automated testing environment through a series of specialized scripts. These scripts perform various functions, from preparing input data to validating the final results.
 
 The framework provides five distinct commands, each related to one of the repositories described in Stage 1. The following list details the function of each command:
@@ -92,20 +97,25 @@ The framework provides five distinct commands, each related to one of the reposi
    
 5. **make general-programs:** Prepares programs that might not be specifically for tests but can be useful for demonstrations, benchmarks, or other activities. This command fetches the relevant programs from the corresponding repository and sets up the environment for their execution.
 
+---
 **Stage 3: Compilation with the RISC-V Toolchain** - In this phase, the application uses the RISC-V toolchain to transform the test files into executable machine code. This toolchain is a set of specialized development tools for the RISC-V architecture, including compilers, assemblers, and linkers. It works on files stored in the repositories mentioned in Stage 1 and passed to the application through Stage 2 commands, converting the source code into assembly codes and executables compatible with the RISC-V architecture.
 
+---
 **Stage 4: Organization of Compiled Files** - In this stage, the files compiled in Stage 3 and their necessary dependencies for execution and validation are organized into specific directories for each test. The aim is to simplify reference and access to these files during test execution. Each directory contains all elements related to the corresponding test, including binaries, hexadecimal files, and .vcd files. This organization avoids confusion and ensures the correct linking of all dependencies, making the test execution process more accessible and efficient.
 
+---
 **Stage 5: Preparation of Simulation Instructions** - After compilation, the resulting .elf files are converted into hexadecimal format instructions. This process ensures the instructions are correctly formatted to be interpreted by the specific digital simulators used in the project: Icarus Verilog or Xcelium.
 
 The aim of this stage is to prepare the instructions for the simulation stage, ensuring they are understandable for the digital simulators. Formatting failures can prevent test execution on simulators and, consequently, hamper the verification of the implemented project's correctness. Therefore, this stage aims to ensure tests can be executed without issues in subsequent stages.
 
+---
 **Stage 6: Automated Test Execution and Validation** - This stage encompasses the automated execution and validation of each test. Once converted, the instructions are tested on the RISC-V SoC with the help of Icarus Verilog or Xcelium software. In the context of compliance tests, all necessary tests for each RV32I instruction are executed. During this process, the strings "PASS" or "FAIL" are recorded at specific memory addresses to signal the success or failure of a test.
 
 During test execution, visual feedback is provided through the D1 pin, corresponding to the PWM output. A successful test triggers a toggle effect on this pin at a frequency of 1 Hz, while a failed test results in a frequency of 2 Hz. This mechanism facilitates user interaction by providing an immediate visual signal of the test status.
 
 All results are recorded in a log file, as described in Appendix [reference]. Additionally, .vcd files are generated for each test, facilitating detailed visualization of the circuit behavior during the test, as well as system debugging and analysis.
 
+---
 **Stage 7: Execution of Tests on Physical Device** - This stage involves setting
 
  up and executing the tests on hardware, such as an FPGA or physical chip. The main task is converting the compiled tests to a binary format suitable for the device.
@@ -124,6 +134,7 @@ The "SPI Test Interface," developed in Verilog for this work, serves as hardware
 The "SPI Test Interface," developed in Verilog for this work, serves as a hardware representation, capable of emulating memory with a SPI interface and integrating into the existing framework. This feature allows the RISC-V SoC to process external instructions, facilitating test execution at any stage of the physical implementation's development, as the SoC only needs to read the instructions to be executed.
 
 This component, integrated into the testing environment, allows the SoC to execute instructions directly at any development stage. The first file can symbolize a netlist of the RISC-V SoC or the physical implementation, proving useful in gate-level simulations and can also represent the RTL representation of the SoC. The module instantiates the SoC, maps instructions to the simulation environment, and generates ".VCD" files for simulation (e.g., using the Icarus software). Alternatively, it can be synthesized on an FPGA and communicate via SPI with the SoC (chip) to execute instructions.
+
 ---
 ## 🛠 Requirements
 To simulate the SoC, the following tools are needed:
