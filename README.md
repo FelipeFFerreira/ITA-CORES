@@ -197,13 +197,37 @@ Tap-Out
 ## 🛠 Requirements
 To simulate the SoC, the following tools are needed:
 - [Iverilog](http://iverilog.icarus.com)
-- RISC-V GCC configured for Femtorv32 or picoRV32 processor design.
 
-💡 **Tip:** Acquire the correct GCC cross-compiler by installing the picoRV32 source from [GitHub](https://github.com/cliffordwolf/picorv32).
+   ## Setting up the RISC-V RV32I Toolchain
+   To compile the tests, it's essential to install the RISC-V RV32I toolchain. This installation ensures that the specific version is compatible with the particular compilation requirements for the formats used in the tests.
 
+   > 🔔 **Note**: The installation instructions come from the Picorv32[Picorv32](https://github.com/YosysHQ/picorv32) repository. The installation process can take at least 3 hours, depending on your computer's hardware configuration.
 
+   **Ubuntu packages needed:**
 
+```bash
+   sudo apt-get install autoconf automake autotools-dev curl libmpc-dev \
+         libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo \
+      gperf libtool patchutils bc zlib1g-dev git libexpat1-dev
+      sudo mkdir /opt/riscv32i
+      sudo chown $USER /opt/riscv32i
+      git clone https://github.com/riscv/riscv-gnu-toolchain riscv-gnu-toolchain-rv32i
+      cd riscv-gnu-toolchain-rv32i
+      git checkout 411d134
+      git submodule update --init --recursive
+      mkdir build; cd build
+   ../configure --with-arch=rv32i --prefix=/opt/riscv32i
+   make -j$(nproc)
+```
+   🛠️ **Setting up the Tool for iCE40 Open Source**
+   After installing the toolchain, download the necessary tools for use and deployment on iCE40 Open Source type boards. Follow the detailed instructions in the repository [DENIS](https://github.com/dloubach/ice40-opensource-toolchain). Start with the 'FTDI drives' item and continue to the 'icesprog' item
 
+   ⚠️ **Important**: If you encounter warning messages during the process, it might be because your development environment does not meet all the necessary requirements. Use the error messages as a guide to identify and address any dependencies that may arise.
+
+   ✅ **Installation Verification**
+   Once the installation is complete, navigate to the `FemtoRV/` directory and run: `make icesugar_nano`
+
+---
 ## 🛠 Framework Execution Guide
 
 ### 📁 Directory Preparation
