@@ -196,6 +196,7 @@ Tap-Out
 
 ## 🛠 Requirements
 To simulate the SoC, the following tools are needed:
+
 Linux/Ubuntu 20.04 LTS distro.
 - Icarus Verilog
 - GtkWave
@@ -223,7 +224,7 @@ Linux/Ubuntu 20.04 LTS distro.
 ```
 🛠️ **Setting up the Tool for iCE40 Open Source**
    
-   After installing the toolchain, download the necessary tools for use and deployment on iCE40 Open Source type boards. Follow the detailed instructions in the repository [DENIS](https://github.com/dloubach/ice40-opensource-toolchain). Start with the 'FTDI drives' item and continue to the 'icesprog' item
+   After installing the toolchain, download the necessary tools for use and deployment on iCE40 Open Source type boards. Follow the detailed instructions in the repository [ice40-opensource-toolchain](https://github.com/dloubach/ice40-opensource-toolchain). Start with the 'FTDI drives' item and continue to the 'icesprog' item
 
 ⚠️ **Important**:
    
@@ -290,16 +291,16 @@ Linux/Ubuntu 20.04 LTS distro.
 
    ![riscv-test-suite references](docs/lowrisc_testes.png)
 
+
 ---
 **🛠️ Execution of Tests on Physical Device**
-   
    To evaluate the SoC in a physical environment, the compliance tests from the official RISC-V repository were used. The SoC was synthesized on the icesugar-nano FPGA.
 
    In this way, all instructions and procedures carried out in the simulation environment are replicated and executed in the physical environment, ensuring the integrity of all original files.
 
    During execution, visual feedback is provided through the D1 pin, which corresponds to the PWM output. This feedback is indicated by a yellow LED, as illustrated in the subsequent figure. The red LED signals a write operation to the device's flash memory. When a test is successful, the yellow LED flashes (toggle effect) at a frequency of 1 Hz; in case of failure, it flashes at 2 Hz. This visual feedback offers users a clear and immediate understanding of the test status.
 
-   Currently, the automated support for executing all tests from a given repository is primarily focused on the official tests of RISC-V. However, all tests produce a file compatible with the 'SPI Test Interface', which can be easily adapted for execution on a physical device. Details of this application will be presented in the following examples.
+   Currently, the automated support for executing all tests from a given repository is primarily focused on the official tests of RISC-V. However, all tests produce a file compatible with the **SPI Test Interface**, which can be easily adapted for execution on a physical device. Details of this application will be presented in the following examples.
 
    ![riscv-test-suite references](docs/device.gif)
 
