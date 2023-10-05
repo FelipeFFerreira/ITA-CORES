@@ -220,11 +220,15 @@ To simulate the SoC, the following tools are needed:
    make -j$(nproc)
 ```
 🛠️ **Setting up the Tool for iCE40 Open Source**
+   
    After installing the toolchain, download the necessary tools for use and deployment on iCE40 Open Source type boards. Follow the detailed instructions in the repository [DENIS](https://github.com/dloubach/ice40-opensource-toolchain). Start with the 'FTDI drives' item and continue to the 'icesprog' item
 
-⚠️ **Important**: If you encounter warning messages during the process, it might be because your development environment does not meet all the necessary requirements. Use the error messages as a guide to identify and address any dependencies that may arise.
+⚠️ **Important**:
+   
+   If you encounter warning messages during the process, it might be because your development environment does not meet all the necessary requirements. Use the error messages as a guide to identify and address any dependencies that may arise.
 
 ✅ **Installation Verification**
+   
    Once the installation is complete, navigate to the `FemtoRV/` directory and run: `make icesugar_nano`
 
 ---
