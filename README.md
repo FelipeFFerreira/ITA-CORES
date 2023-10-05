@@ -293,7 +293,7 @@ Linux/Ubuntu 20.04 LTS distro.
 
 
 ---
-## 🛠️ Execution of Tests on Physical Device**
+## 🛠️ Execution of Tests on Physical Device
 
    To evaluate the SoC in a physical environment, the compliance tests from the official RISC-V repository were used. The SoC was synthesized on the icesugar-nano FPGA.
 
@@ -312,5 +312,4 @@ Linux/Ubuntu 20.04 LTS distro.
 Your feedback and contributions are highly welcomed and appreciated! Feel free to improve any part of this project and submit your ideas and enhancements.
 
 ---
-Copyright (c) 2022-2023 Felipe Ferreira Nascimento
-São Paulo, Brazil
+Copyright (c) 2022-2023 Felipe Ferreira Nascimento. São Paulo, Brazil
