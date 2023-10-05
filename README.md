@@ -196,7 +196,9 @@ Tap-Out
 
 ## 🛠 Requirements
 To simulate the SoC, the following tools are needed:
-- [Iverilog](http://iverilog.icarus.com)
+Linux/Ubuntu 20.04 LTS distro.
+- Icarus Verilog
+- GtkWave
 
 ## Setting up the RISC-V RV32I Toolchain
    To compile the tests, it's essential to install the RISC-V RV32I toolchain. This installation ensures that the specific version is compatible with the particular compilation requirements for the formats used in the tests.
