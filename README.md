@@ -224,7 +224,7 @@ Linux/Ubuntu 20.04 LTS distro.
 ```
 🛠️ **Setting up the Tool for iCE40 Open Source**
    
-   After installing the toolchain, download the necessary tools for use and deployment on iCE40 Open Source type boards. Follow the detailed instructions in the repository [dloubach-ice40-opensource](https://github.com/dloubach/ice40-opensource-toolchain). Start with the 'FTDI drives' item and continue to the 'icesprog' item
+   After installing the toolchain, download the necessary tools for use and deployment on iCE40 Open Source type boards. Follow the detailed instructions in the repository [dloubach-ice40-opensource](https://github.com/dloubach/ice40-opensource-toolchain). Start with the **FTDI drives** item and continue to the **icesprog** item
 
 ⚠️ **Important**:
    
@@ -293,7 +293,8 @@ Linux/Ubuntu 20.04 LTS distro.
 
 
 ---
-**🛠️ Execution of Tests on Physical Device**
+## 🛠️ Execution of Tests on Physical Device**
+
    To evaluate the SoC in a physical environment, the compliance tests from the official RISC-V repository were used. The SoC was synthesized on the icesugar-nano FPGA.
 
    In this way, all instructions and procedures carried out in the simulation environment are replicated and executed in the physical environment, ensuring the integrity of all original files.
