@@ -205,7 +205,7 @@ Linux/Ubuntu 20.04 LTS distro.
 
 > 🔔 **Note**: The installation instructions come from the [Picorv32](https://github.com/YosysHQ/picorv32) repository. The installation process can take at least 3 hours, depending on your computer's hardware configuration.
 
-**Ubuntu packages needed:**
+**RISC-V GNU toolchain and libraries:**
 
 ```bash
    sudo apt-get install autoconf automake autotools-dev curl libmpc-dev \
