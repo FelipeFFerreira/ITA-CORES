@@ -287,9 +287,7 @@ Linux/Ubuntu 20.04 LTS distro.
    3. Select option 2. The necessary dependencies will be verified.
    4. The following image illustrates a sample execution, where several operations are performed. Ultimately, a signature is generated and compared with the reference signature found in `../riscv-test-suite/references`. Test coverages can also be located in this repository.
 
-   ![riscv-test-suite references](docs/lowrisc_inicio.png)
-
-   ![riscv-test-suite references](docs/lowrisc_testes.png)
+   ![riscv-test-suite references](docs/lowrisc_inicio.gif)
 
 
 ---
