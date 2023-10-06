@@ -50,7 +50,7 @@ int main() {
 
     fprintf(stdout, "\033[1;34m[%s] Processing Files For Compilation\033[0m\n", __func__);
     
-    char type_test[100];
+    char type_test[BUFFER_SIZE];
 
 #ifdef ENV_FRONTEND_SIGNOFF
 
@@ -60,7 +60,7 @@ int main() {
             printf("\033[1;34m>>COMPLIANCE_RISCV_ORG\033[0m\n");
             Loading();
             Command(scriptfilePath_tooltchain, "make riscv-tests TESTDIR=riscv-tests ENV_FRONTEND_SIGNOFF=1", true);
-            strcpy(type_test, "riscv-tests");
+            strcpy(type_test, REPO_COMPLIANCE_RISCV_ORG);
             break;
         
         case RISCV_SUITE_LOWRISCV:
@@ -68,7 +68,7 @@ int main() {
             printf("\033[1;34m>>RISCV_SUITE_LOWRISCV\033[0m\n");
             Loading();
             Command(scriptfilePath_tooltchain, "make riscv-test-suite TESTDIR=riscv-test-suite ENV_FRONTEND_SIGNOFF=1", true);
-            strcpy(type_test, "riscv-test-suite");
+            strcpy(type_test, REPO_RISCV_SUITE_LOWRISCV);
             break;
 
         case PERIPHERAL:
@@ -76,6 +76,7 @@ int main() {
             Loading();
             printf("\033[1;34m>>TESTS_FOR_PERIPHERALS\033[0m\n");
             Command(scriptfilePath_tooltchain, "make peripheral-tests TESTDIR=peripheral-tests ENV_FRONTEND_SIGNOFF=1", true);
+            strcpy(type_test, "peripheral-tests");
             break;
 
         case UNIT_TESTS:
@@ -83,7 +84,7 @@ int main() {
             Loading();
             printf("\033[1;34m>>UNIT_TESTS\033[0m\n");
             Command(scriptfilePath_tooltchain, "make peripheral-tests TESTDIR=peripheral-tests", true);
-            strcpy(type_test, "peripheral-tests");
+            strcpy(type_test, "unit_tests");
             break;
 
         case GENERAL_PROGRAMS:
@@ -106,11 +107,12 @@ int main() {
                 printf(">>COMPLIANCE_RISCV_ORG\n");
                 Loading();
                 Command(scriptfilePath_tooltchain, "make riscv-tests TESTDIR=riscv-tests", true);
+                strcpy(type_test, REPO_COMPLIANCE_RISCV_ORG);
                 break;
             
             case RISCV_SUITE_LOWRISCV:
                 Loading();
-                printf(">Não Suportado\n");
+                printf("\033[1;31m>Not Supported\033[0m\n");
                 exit(10);
                 break;
             
@@ -119,6 +121,7 @@ int main() {
             Loading();
             printf("\033[1;34m>>TESTS_FOR_PERIPHERALS\033[0m\n");
             Command(scriptfilePath_tooltchain, "make peripheral-tests TESTDIR=peripheral-tests ENV_FRONTEND_SIGNOFF=1", true);
+            strcpy(type_test, "peripheral-tests");
             break;
 
         case UNIT_TESTS:
@@ -168,7 +171,9 @@ int main() {
 
 #ifndef ENV_FRONTEND_SIGNOFF
     fprintf(stdout, "\033[1;34m[%s] Preparing simulations for the device\033[0m\n", __func__);
-    GeneratSimulationDevice(); 
+    if (strstr(type_test, REPO_COMPLIANCE_RISCV_ORG)) {
+        GeneratSimulationDevice(); 
+    }
 #endif
 
     printf("\n\033[1;36m-----------------------------------------\n");
@@ -180,7 +185,7 @@ int main() {
 
 void Command(char * scriptfilePath, char * Command, bool make)
 {
-    char command[100];
+    char command[BUFFER_SIZE];
 
     if (make) {
         snprintf(command, sizeof(command), "(cd %s && %s)", scriptfilePath, Command);
@@ -218,7 +223,7 @@ void MachineCodeTool() {
         if (entry->d_type == DT_DIR) {
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
                 // printf("%s\n", entry->d_name);
-                char command[100];
+                char command[BUFFER_SIZE];
                 snprintf(command, sizeof(command), "(./tool-elf %s)",  entry->d_name);
                 Command("", command, false);
                 snprintf(command, sizeof(command), "(./tool-elf-flash %s)",  entry->d_name);
@@ -232,7 +237,7 @@ void MachineCodeTool() {
 
 void GeneratSimulation(char *type_test)
 {
-    char command[100];
+    char command[BUFFER_SIZE];
     printf("\033[1;32m[%s]\033[0m Preparing files for simulation\n", __func__);
     snprintf(command, sizeof(command), "./run-vvp %s", type_test);
     Command("", command, false);
@@ -254,7 +259,7 @@ void GeneratSimulationDevice()
         if (entry->d_type == DT_DIR) {
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
                 printf("[%s] Running simulation test [%s] on Device:\n", __func__, entry->d_name);
-                char dir_path[100], command[100];
+                char dir_path[BUFFER_SIZE], command[BUFFER_SIZE];
                 snprintf(dir_path, sizeof(dir_path), "%s%s", directory_path, entry->d_name);
                 snprintf(command, sizeof(command), "sudo icesprog -w -o 0x00020000 %s.bin", entry->d_name);
                 printf("\033[1;34mpath:\033[0m %s \033[1;34m|\033[0m \033[1;34mcommand:\033[0m %s\n\033[0m", dir_path, command);

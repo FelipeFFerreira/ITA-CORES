@@ -51,19 +51,19 @@ void Command(char *directory_path, char *test, char cmd, char *string) {
     } else {
     }
    
-    printf("comando : %s\n", command);
+    printf("\033[1;34mcommand: %s\033[0m\n", command);
     int status = system(command);
 
     if (status != -1) {
         wait(&status);
 
         if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-            printf("Arquivo VCD com sucesso!\n");
+            printf("\033[1;32mVCD file generated successfully!\033[0m\n");
         } else {
-            printf("Erro ao Gerar arquivo VCD\n");
+            printf("\033[1;31mError generating VCD file.\033[0m\n");
         }
     } else {
-        printf("Erro ao executar o comando 'make programa'.\n");
+        printf("\033[1;31mError executing the 'make programa' command.\033[0m\n");
     }
 }
 
@@ -79,7 +79,7 @@ void GenerateVVP(char * string) {
     // if (strstr(string, "riscv-tests"))
     
     snprintf(directory_path_base, sizeof(directory_path_base), "../../%s/base_testbench/", string);
-    printf(">> Genarete Test [%s]\n", string);
+    printf("\033[1;34m>> Generate Test\033[0m \033[1;35m[%s]\033[0m\n", string);
     
     sprintf(dir_at, "%s%stestbench.v", directory_path_base, "file_base/");
     fptr1 = mode_file(dir_at, "r");
@@ -93,7 +93,7 @@ void GenerateVVP(char * string) {
 
     DIR* directory = opendir(directory_path);
     if (directory == NULL) {
-        perror("Erro ao abrir o diretório");
+        perror("Error opening the directory");
         return 1;
     }
 
@@ -101,7 +101,7 @@ void GenerateVVP(char * string) {
     while ((entry = readdir(directory)) != NULL) {
         if (entry->d_type == DT_DIR) {
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-                fprintf(stdout, "[%s] Gerando arquivos para simulação [%s]\n",  __func__, entry->d_name);
+                fprintf(stdout, "\033[1;34m[%s] Generating simulation files for\033[0m \033[1;35m[%s]\033[0m\n", __func__, entry->d_name);
                 sprintf(dir_at, "%s%s", directory_path_base, "testbench.v");
                 fptr2 = mode_file(dir_at, "w");
                 for (int j = 0; j < count; j++) {
@@ -170,10 +170,10 @@ void ResultTest(char * test, char *string) {
                         line_output[count_output][strcspn(line_output[count_output], "\r\n")] = 0;
                         line_reference[count_reference][strcspn(line_reference[count_reference], "\r\n")] = 0;
                         if (strcmp(line_reference[count_reference], line_output[count_output]) != 0) {
-                            printf("[%s] != [%s]\n", line_output[count_output], line_reference[count_reference]);
+                            printf("\033[1;35m[%s]\033[0m \033[1;33m!=\033[0m \033[1;35m[%s]\033[0m\n", line_output[count_output], line_reference[count_reference]);
                             pass = false;
                         } else {
-                             printf("[%s] == [%s]\n", line_output[count_output], line_reference[count_reference]);
+                            printf("\033[1;35m[%s]\033[0m \033[1;32m==\033[0m \033[1;35m[%s]\033[0m\n", line_output[count_output], line_reference[count_reference]);
                         }
                         count_reference += 1;
                     }
