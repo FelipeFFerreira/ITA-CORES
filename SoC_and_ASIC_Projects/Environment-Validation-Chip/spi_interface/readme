@@ -1,0 +1,3 @@
+Change the 'target' to the test to be executed.
+Currently only supported for official tests from the riscv-test and peripherals repository.
+All tests mapped to the SPI interface are made available when running the framework for the target device and are available in the '/build' directory.

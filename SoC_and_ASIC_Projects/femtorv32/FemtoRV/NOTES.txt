@@ -1,0 +1,544 @@
+
+Precompiled FPGA tools:
+   https://github.com/open-tool-forge/fpga-toolchain
+
+
+TODO:  
+      * ULX3S SDRAM
+      * ULX3S USB keyboard (or tiny I2C keyboard before then)
+      * pipeline !
+      * compliance test ! https://github.com/riscv/riscv-compliance/
+      
+      * Rename some signals
+               register file, decoder:
+                   reg_s1,reg_s2,reg_d,reg_s1_data,reg_s2_data,reg_d_data,
+               ALU:
+	         in1,in2,aluInSel1(reg/pc),aluInSel2(reg/imm)
+		 A,B,A_is_pc,B_is_imm
+		 
+      Pour augmenter FMAX:		 
+          on devrait peut-être latcher:
+              Les tests pour les branchements
+	      Le calcul d'adresses
+	  (et il faudrait aussi essayer d'utiliser pour ça la primitive ALU ECP5)    
+      * register using combinatorial RAM.
+      * print_float, printf("%f")
+      * A 90-ish "megademo" on the OLED display !
+      * Change RAM interface, make it match Claire's protocol (then
+        we'll be able to use many SOC / CPU configurations, see if we
+        can fit Claire's picoSOC on the ICEStick, use attoSOC with
+	femtoRV32 etc...)
+      * Would like to have a shell-like interface (or button-driven) to select executables from
+	the sdcard, run them, get back from the executable to the runtime.
+	It means that @ultraembedded's fat library + sdcard support need to be loaded in a special
+	"system" memory zone...
+      * ... what's in the "system" zone could be accessed from the priviledged interface. We could even
+        have some basic kind of memory protection (with system zone and user zone).
+      * need to implement interrupts.
+      * Would like to understand virtual memory. Does not seem to be simple !
+      * Instruction cache and data chache to be understood as well !
+      * I2C, can we do it in sotft ? https://github.com/arduino/ArduinoCore-avr/tree/master/libraries/Wire/src
+           (seems to be complicated... probably need interrupts, and code will take more than a few bytes...)
+      *	ultraembedded (twitter) 
+          - AXI read port for SPI Flash / https://github.com/ultraembedded/core_spiflash
+	  - Another SPI Flash reader: https://www.bastibl.net/open-source-fpga/
+ 	      Uses under the hood this one: https://github.com/smunaut/ice40-playground/blob/master/cores/spi_flash/rtl/spi_flash_reader.v
+          - https://zipcpu.com/blog/2018/08/16/spiflash.html
+             and code: https://github.com/ZipCPU/icozip/blob/master/rtl/icozip/spixpress.v
+          - Chip: https://www.micron.com/-/media/client/global/Documents/Products/Data%20Sheet/NOR%20Flash/Serial%20NOR/N25Q/n25q_32mb_1_8v_65nm.pdf
+          - mecrisp-ice-1.8/hx1k/nucleus.fs
+          - better datasheet: https://www.winbond.com/resource-files/w25q128jv%20spi%20revc%2011162016.pdf
+         iceprog -o 1M foo.txt
+	  - quad SPI: https://github.com/dan-rodrigues/icestation-32/blob/82bb8b9fcf16ea89d0fd3b29eaee0813c684ee55/hardware/flash_reader.v
+      
+      * "Factorize" clock for UART ?
+      * Use Claire's UART instead of J1's UART ? (Claire's code seems
+        to be more compact, what does it give in terms of number of LUTS ?)
+      * Bugs: on init, get_char() returns garbage the first time.
+      * I2C keyboard: 
+          https://community.cypress.com/thread/52527
+      * SPI, FPGA4Fun: https://www.fpga4fun.com/SPI2.html
+      * OLED SSD1351 driver is still unstable with freq > nnn (100?) MHz
+      * OLED SSD1351 does not work with @emard's SSD1351
+
+
+       Un emulateur en C++ par UltraEmbedded (permet de piger comment
+       implanter la gestion des interruptions et exceptions).
+      * https://github.com/ultraembedded/exactstep
+        (en particulier https://github.com/ultraembedded/exactstep/blob/master/cpu-rv32/rv32.cpp)
+
+DONE: 
+      * DONE soft floating point routines: https://github.com/riscv/riscv-glibc/tree/riscv-glibc-2.29/soft-fp
+      * DONE STORE state is not useful, could be done in EXECUTE (but addressReg should be
+              set to ALUout in DECODE state).
+      * DONE 1-hot for nextPCSel and writebacksel ? Yes, reduces LUT count and increases maxfreq
+      * DONE ULX3S sdcard and FAT file system using @ultraembedded's lib.
+      * DONE ST_NICCC demo, run on sdcard
+      * DONE support FAT file system on sdcard
+
+
+
+=================================================================================================================
+
+RISC-V notes:
+  * RISC-V specification: https://content.riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf
+  * RISC-V assembly programmer's manual: https://github.com/riscv/riscv-asm-manual/blob/master/riscv-asm.md
+  * Fantastic answer to a question asked in StackOverflow (great source of inspiration for FemtoRV32):
+      https://stackoverflow.com/questions/51592244/implementation-of-simple-microprocessor-using-verilog/51621153#51621153
+
+=================================================================================================================
+
+  Lessons taken:
+             - simulation is important ! (of course)
+	     - use generic primitives as much as possible, and let
+	       yosys infer BRAMs (my handwritten code with SB_xxx
+	       primitives used more LUTs than what yosys does)
+	     - when there is a bug, it can be in the hard, but it
+	       can be in the soft as well !
+	     - femtorv32 state machine: choose good names for the states,
+	       and be super clear about what's ready or not at the beginning
+	       and at the end of each state. x <= y means that x will have value
+	       y at the beginning of the *next* state (en Francais dans le texte:
+	       "ca va sans dire mais ca va mieux en le disant" !!)
+	     - reg is not a register, it is an abstraction that can be transformed
+	       into a reg/latch by the synthetizer if need be.
+	     - everything that appears on the left side of '=' or '<=' should be a
+	       reg.
+	     - number of used LUTs can vary in surprising manners ! For instance,
+	       sometimes changing the *names* of variables has an influence (???)
+	     - SSD1351 driver, send clock signals in the middle of the serialized
+	       bits: do chronograms carefully, and everything goes much better !
+
+  Observations:
+             - RISCV is super-well designed and smart ! At the beginning, the design
+	       decision they took may seem weird (32 bit constant loaded by two
+	       different instructions, one PC-relative, or 5 different encoding for
+	       the constants, with parts of the bits scrambled in different parts
+	       of the instr, or special register x0), but everything makes sense
+	       when you write the instr decoder:
+	          - source and dest registers (5 bits) always at the same position
+		  - ALU op always at the same position
+		  - sign-expanded bit always at the same position
+	       Consequence: decoder uses a minimal number of gates, has low logic
+	       depth, its outputs do not need to be latched.
+	     - Coding in RISCV assembly is easier than I thought: few instructions
+	       to remember, so can be learnt quickly ! And for the somewhat weird
+	       instructions (lui, auipc, jal, jalr), the 'pseudo-instructions'
+	       (li, la, call, ret, branch variants) make things easier. The ABI
+	       register names make thing easier as well. 
+             - Having an assembler, linker, c compiler ready is fantastic !
+	       The only difficult part was:
+	          1) finding the right switch to generate pure RV32I instructions
+		  2) finding a way of generating an ELF and extracting the raw content
+		  3) converting this raw content into a form that VERILOG's $readmemh()
+		     can understand.
+
+  DebugLog:
+             - iverilog ne compilait pas ma fonction 'flip' dans femtorv32-electron:
+	        c'est parceque j'avais un ';' apres endfunction !!
+	     
+             - plus de sortie vidéo sur l'ULX3S, qu'est-ce qu'il se passe ?
+	         --> il n'arrivait plus à avoir les bons timings en mode 1024x768
+	       (ça dépend de la seed ... je suis descendu à 800x600)
+  
+             - Compiler des programmes pour l'ULX3S et les envoyer sur 
+	       l'ICESTICK, c'est pas une bonne idee (faire un truc pour 
+	       memoriser la target actuelle)
+  
+             - A un moment, sur ULX3S, le mode mirror ne marchait
+               plus, et plus rien ne s'affichait en FGA: j'avais 
+	       simplement un firmware qui ne correspondait plus au
+	       hardware: j'avais supprimé le SPI en mode IO, et renuméroté
+	       les registres IO, et pas reflashé le bitstream sur le FPGA
+	       de l'ULX3S.
+
+             - A un moment, tinyraytracer plantait systematiquement au
+               moment d'afficher la premiere sphere. Ca venait de mon
+               linker script, qui importait trop de choses en BRAM, en particulier
+               les fonctions +,-,*,/ en virgule flottante, parceque
+               les commentaires du linker script ne se comportent pas comme on s'y
+               attend !
+  
+             - A un moment, printf() affichait du garbage. Ca venait
+               des fontes que j'avais mises dans le segment rodata,
+               mais pas bien, à revoir...
+  
+             - Mapped SPI flash, fast read mode: j'avais oublié MOSI: cmd_addr[31] -> cmd_addr[39]
+
+             - Mapped SPI flash n'etait plus visible dans le registre
+               des devices, parceque bug nommage de macros 
+	       (NRV_MAPPED_SPI_FLASH versus avant NRV_IO_MAPPED_SPI_FLASH)
+  
+             - Un bug qui m'a fait croire que mon IceStick était toasté:
+	       Dans femtosoc.v, pour tester le negative reset / bouton ON de l'ULX3S,
+	       j'avais remplacé reset = &reset_cnt par reset = |reset_cnt, et ça
+	       invalide du coup totalement mon mécanisme de délai/reset.
+
+             - scrolling dans tty: il reste tjrs une ligne vide à la
+               fin, à cause du retour chariot de la dernière ligne !
+	       En fait, il ne faudrait pas scroller au retour chariot, mais
+	       scroller au premier caractère de la ligne suivante !!
+	     - le menu est bouzillé !!  
+	       
+             - un bug à la gomme du même genre: printf() ne printait rien du tout
+	       sur SSD1331: c'est encore à cause de NRV_IO_SSD1351_SSD1331: dans
+	       HardwareConfig, je ne pensais pas à positionner le bit à 1 dans
+	       le registre device (qui était positionné par NRV_IO_SSD1351 au lieu
+	       de NRV_IO_SSD1351_1331) ... mais en fait ça marche tjrs pas !
+	       ... parceque HardwareConfig.v était inclus *avant* SSD1351_1331.v,
+	       donc il ne voyait pas encore NRV_IO_SSD1351_1331 défini par celui-ci !
+ 
+             - un bug terrible ! mon petit programme pour ecran
+               SSD1331 marchait, et ensuite plus après évolution RTL et C
+	       -> j'ai cherché le bug dans le C, ça venait du RTL:
+	          apres avoir ajouté une config NRV_IO_SSD1351_SSD1331, il
+		  restait un `ifdef NRV_IO_SSD1351 à la fin de femtosoc.v,
+		  pour le signal d'attente !! (à la place de NRV_IO_SSD1351_1331)
+		  
+             - test_FGA.c: uint16_t* graph_mem = (uint16_t)FGA_BASEMEM;
+	                                              ^___ Manquait une étoile ici !!!
+                et cet andouille de compilo C me disait rien ! Perdu 1h avec ça,
+		je croyais qu'écriture processeur->VRAM ne marchait plus !
+             - FGA, accelerated horizontal lines
+	         - J'avais oublié d'appeler wait_GPU() (donc ça ne marchait pas au delà d'une certaine longueur)
+		 - Il y a parfois dans ST_NICCC des polygones en
+                   "papillon", avec xleft à droite de xright donc la boucle 'hardware' s'arretait a
+                   la ligne suivante !
+             - FGA, emulation du SSD1351
+	         a) j'ai oublié de conditionner à io_wstrb
+		 b) quand il y a plusieurs <= dans un bloc, j'ai
+                    tendance à oublier qu'ils ne sont pas séquentiels entre eux, et à faire
+		    par exemple:
+		        x1 <= mem_wdata;
+			x  <= x1;
+		    en voulant dire:
+		        x1 <= mem_wdata;
+			x  <= mem_wdata;
+  
+             - Everything seemed to be broken after I generated all IO
+               register IDs from VERILOG sources, in fact I was
+               reading frequency and "cycles per loop" from
+               DEVICES_FREQ_bit instead of DEVICES_FREQ (defines for
+               NRV_FREQ and NRV_CPL in femtorv32.h)
+  
+             - Timing was VERY different between mini-femtorv32 and femtorv32,
+	       it was because I was *always* writing to the ALU in EXECUTE state,
+	       randomly loading shift operations and causing wait alu waiting !
+	       
+             - Had several difficulties introducing a wait state for IOs:
+	        STORE:
+	           a) everything can't be done in the STORE state, because
+		      when we enter the STORE state, mem_wenable and mem_address
+		      where just set by execute, thus mem_wbusy will be set
+		      at the next cycle -> new WAIT_IO_STORE state.
+		   b) stupid error in WAIT_IO_STORE and WAIT_IO_STORE_bit constants !!!
+		   ---> found the bug by simulation (again, simulation: do-it-or-die !!)
+		   ---> side effet: experimental max freq dropped from 80MHz to 75MHz
+		        (state machine gets more complicated...)
+		   ... still not there (mandelbrot demo displays garbage when removing
+		         wait state from functions), does not enter wait loop, to be
+			 checked with simulation.
+	           ---> OK, need to use SSD1351_is_sending instead of !SSD1351_CS for
+		         memory_wrbusy
+		   ---> Still had problems at 80MHz with asm programs, removed the 'else
+		         branch' in register file, seems OK now.
+
+             - forgot to restore ra in a function (oled_write_window)
+
+             - after reorganization of ALU (busy signal separated
+	       into ALU busy + decoder needWaitAlu), I had a big
+	       bug: shift by register content was no longer working !
+	       It is because I forgot to set needWaitAlu in register - register shift op.
+	          Debug strategy that worked:
+		    1) detect bug (sieve.c was not working) -> suspected weird interaction
+		       with UART (but in fact it was not the problem)
+		    2) minimal example
+		    3) send data to LED, made sure the problem was still there 
+		       -> ruled-out UART problem
+		       -> identified shift instruction as the culprit
+		    4) simulation + display of word sent to the LEDs
+		                  + full display of the processor's state.
+
+             - get_char() "clicking" twice: it was <enter> generating CR,LF!
+  
+             - I had swapped LB,LBU and LH,LHU: this is counter-intuitive:
+  	         bit is 1 for arith versus logical shifts
+	         bit is 0 for load arith versus load logical
+
+             - register write back was writing stuff in some registers
+               when Id was zero ! Added a test. 
+  
+             - ALU output is no longer latched, so that it is immediatly
+               available in EXECUTE state (and I no longer need to activate
+               it in the DECODE stage, which was WRONG because register outputs
+               were not ready). On the other end, longer critical path (maybe 
+               doing so is BAD...)
+  
+             - CALL/RET was not working: it is because when writing-back PC+4,
+               PC already had PC_next value. Now write backs that need to occur
+               during WAIT state (that is, shifts) have now their own state
+               (WAIT_INSTR_AND_ALU). All other write backs occur during EXECUTE
+               state (then followed by WAIT_INSTR state).
+
+               -> associated comment and combinatorial formula for writeBack:
+                // Do not write back when state == WAIT_INSTR, because
+ 	        //   - in that case, was already written back during EXECUTE
+                //   - at that time, PCplus4 is already incremented (and JAL needs
+                //     the current one to be written back)
+                // writeBack = (state == EXECUTE && writeBackEn) || 
+                //	       (state == WAIT_ALU_OR_DATA && !aluBusy);
+               -> now moved to a latch, updated in the state machine (cleaner I think,
+	        and probably reduces the critical path).
+   
+
+             - verilator --lint-only detected a couple of width mismatch 
+                in the RAM controller that explained load/store address mismatch  
+  
+             - there were several bugs in my RAM array *test program* (register clashes,
+                and forgot to save ra when calling func from func).
+  
+             - OLed: I had forgotten to program the shifter
+                     I was doing stupid things for generating the write clock
+                     (it is simply the negated clock !)
+ 
+             - addi reg,-5 was adding 5
+                    opqual was wrong ! bit 30 is also used by imms, 
+                    thus it was changing ops
+                    (in particular for negative numbers !)
+                    Found out with icarus
+  
+             - li sp,0xff8 generates an invalid opcode ? 
+                     (maybe extended instructions ?)
+
+             - experienced wrong opcode in the LEDs demo program,
+	         by specifying linker options -m elf32lriscv_ilp32 -b elf32-littleriscv
+		 it fixed the problem (but I do not know exactly what
+                 it means, maybe it was using some 64-bits specific instructions or someting...)
+
+             - freq adapter for OLED screen: to really figure out what happens, had to write
+	         chronograms and think carefully to understand how my own design sends the
+		 clocks in the middle of the serialized bits. Now I have a much better
+		 understanding (femtosoc.v.SSD1351_divider). Note that some work is still needed
+		 to toggle CS at the right moment after the last bit (I probably do that too soon,
+		 since it is done as soon as count reaches zero, which happens right in the middle
+		 of the bit, need to wait for the other half if divider is greater than 2).
+		 What improved much: management of (latched) CS:
+		     ** write: set CS to 1 (and bitcount to 8 etc...)
+		     ** on posedge clk:
+		     if(SSD1351_slow_cnt == SSD1351_cnt_max) begin
+		     	if(SSD1351_sending) begin
+		           if(SSD1351_CS) begin
+		               SSD1351_CS <= 1'b0;
+	                   end else begin
+		               SSD1351_bitcount <= SSD1351_bitcount - 4'd1;
+		               SSD1351_shifter <= {SSD1351_shifter[6:0], 1'b0};
+	                   end
+	                end else begin 
+	                   SSD1351_CS  <= 1'b1;  
+	                end
+	             end
+		     (in other word: first slow clk triggers CS, then next clks shift,
+		      and finally last clk switches CS off)
+
+             - SPI Flash memory reader: I had several difficulties:
+	          1) stupid errors in the shifter (shift left<->right, MSB<->LSB, which bits to copy)
+		  2) CS was combinatorially wired to busy, making it deactivating the chip too soon
+		     (on the fast clock). Replaced it with a latch, activated on write, and stopped
+		     on slow clock rising edge if not busy.
+
+             - SDCard reader: the fat access library was hanging. It
+                 was coming from the -O3 optimization flag, that is
+                 super-smart, and that recognizes clearing loops, replacing them with
+                 calls to memset(), including in the implementation of memset() ->
+		 infinite recursion !!
+
+   DEBUGGING THE STATE MACHINE, lessons taken:
+   
+   Now I think I better understand what's going on, by thinking about it like that:
+     Rule 1: x <= y:   x is ready right at the beginning
+                       of the *next* state.
+     Rule 2: whenever registers or memory are involved,
+                  one needs an additional cycle right
+                  after register Id or mem address changed
+                  before getting the value.
+   
+   Important:
+      Carefully chose the states and their names !
+      Keep in mind what's ready (and not) at the beginning of each state,
+       especially when memory is involved (as well as registers since they
+       are in BRAM here).
+
+
+
+
+  TODO / IDEAS:
+        DESIGN
+             - Tests RISC-V (c.f. PICORV32), dans simulateur et 'on device' si possible
+             - Check all recommendations from MIT course:
+                   http:web.mit.edu/6.111/www/f2016/handouts/L11_4.pdf
+                   - beware of clock skew, don't gate the clock
+                   - always assume that combinatorial logic glitches
+                   - Never drive a critical asynchronous control signal 
+                     (register clock, write enable) from the output of 
+                      combinational logic.  
+                   - Ensure a stable combinational output before it is sampled by CLK
+                   - When needed, create glitch-free signals by registering outputs.
+                   - Synchronize all asynchronous signals, Use two back-to-back registers  
+                         http://web.mit.edu/6.111/www/f2016/handouts/L09_4.pdf
+                   - Do I have ill-formed pipelines ? (slide 14)
+             - Need to find a way of latching ALU output, in order to break
+               critical path (maxfreq is now 37 MHz, we can probably do 50 MHz)
+               Critical path is way too long, need to insert registers in IO controller
+               and maybe in other places (but I'm really running out of LUTs)
+	         -> improved it (now 45 - 50 MHz depending on configured peripherals),
+		    and seems to work well at 60 MHz
+		 -> one-hot state machine, peripherals -> now > 50 MHz, and OK at 85 MHz   
+             DONE - Gain some LUTs by reducing address bus width in RAM and mapped IO 
+                and latched addresses (and this will also reduce the critical path since
+                the adder is plugged on it !)
+             DONE - Maybe gain some LUTs by not storing the two LSBs of the PC counter, and do
+                 PC+1 instead of PC+4
+             DONE - Try increasing freq to 60 MHz and decreasing OLED controller freq (slower clock, 
+               affect (&) both OLED clock signal and shifter)
+ 
+         TOOLS
+             - DONE: Modular compilation and linking (+ automatic elimination of unused symbols)
+             - DONE: Find a way of interfacing gcc 
+  
+         FIRMWARE / DEMOS
+             - Mandelbrot set demo: DONE
+  
+         MAPPED IO / PERIPHERALS
+             - Interface for led matrix display: DONE
+
+========================================================================
+
+
+void __attribute__((optimize("O3"))) fast_function(void) {
+    // ...
+}
+
+For a whole file, you can use the optimize pragma:
+
+#pragma GCC push_options
+#pragma GCC optimize ("O3")
+
+/*
+ * Code that needs optimizing
+ */
+
+#pragma GCC pop_options
+
+
+========================================================================
+
+DONE: from Harvard to Von Neumann
+   - one unique address bus (+ instr prefetch register management)
+   NEXT:
+     1) fusion ROM and RAM in single component
+        (use same memory map for now, replace first page of RAM
+         with ROM, mandelbrot demo fits (232 words !!)
+         --> DONE
+     2) fusion data bus
+         --> DONE
+     3) use smthg similar to Claire's interface for memory, 
+            move read sign expansion into processor --> DONE 
+            keep write mask in memory (but adapted) --> DONE
+     4) cleaner scripts to generate initial RAM content & no longer
+        distingish ROM/RAM --> DONE
+     5) simulation backend --> DONE
+     6) resize address bus to save LUTs --> DONE
+     7) investigate error flag behavior
+          --> test with simpler ALU (temporarily deactivate
+              shifts...) / latch for ALUbusy... --> DONE
+	  --> DONE (little delay at startup, like in PicoSOC for icebreaker)    
+     8) investigate critical path that seems to connect things that
+        should not be connected.
+        
+Course on processor design / datapath: https://www.cise.ufl.edu/~mssz/CompOrg/CDA-proc.html        
+        
+
+https://zipcpu.com/blog/2017/06/12/minimizing-luts.html
+
+============================================================================
+
+Thèse sur FPGA adder:
+   https://www.collectionscanada.gc.ca/obj/s4/f2/dsk3/SSU/TC-SSU-08182005161614.pdf
+Review sur FPGA adders:
+   https://link.springer.com/content/pdf/10.1007%2F978-3-319-08422-0_129.pdf
+
+============================================================================
+
+writeBack: combinatorial ou latched
+
+combinatorial:
+      writeBack = (state[EXECUTE_bit] && writeBackEn) || state[WAIT_ALU_OR_DATA_bit];
+
+latched:
+   DECODE:
+      writeBack <= writeBackEn;
+   EXECUTE:
+      writeBack <= 1'b0; // par défaut
+      ...
+      case (nextPCsel)
+   	   2'b00: begin // normal operation
+	      PC <= PCplus4;
+	      state <= needWaitAlu ? WAIT_ALU_OR_DATA : USE_PREFETCHED;
+	      writeBack <= needWaitAlu;
+           end		   
+   
+   LOAD:
+      writeBack <= 1'b1;
+      
+   WAIT_ALU_OR_DATA:
+      writeBack <= aluBusy;
+      
+============================================================================
+
+LUT golfing experiments, trying to reduce LUT count. 
+
+// Alternative decoder for immediates (that tries to shuffle the blocks)
+//
+// ... uses more LUTs in the end.
+
+   wire [20:0] immB1 = {21{instr[31]}}; // Do sign expansion only once
+   
+   wire [5:0]  immB2 = instr[30:25];    //  \
+   wire [3:0]  immB3 = instr[24:21];    //  - These three blocks are reused
+   wire [7:0]  immB4 = instr[19:12];    //  /   by several formats.
+
+   wire [31:0] Iimm = {immB1,       immB2, immB3, instr[20]};
+   wire [31:0] Simm = {immB1,       immB2, instr[11:8], instr[7]};
+   wire [31:0] Bimm = {immB1[19:0], instr[7], immB2, instr[11:8], 1'b0};
+   wire [31:0] Jimm = {immB1[11:0], immB4, instr[20], immB2, immB3, 1'b0};   
+   wire [31:0] Uimm = {instr[31],   instr[30:20], immB4, {12{1'b0}}};
+
+=============================================================================
+
+#OLD FIRMWARE makefile.inc
+
+#Rule to convert an ELF binary into a raw hex file (that cannot be directly imported in verilog files)
+%.bm_rawhex: %.bm_elf $(RV_BINARIES)
+	$(RVOBJCOPY) -O verilog $< $@
+	
+#Rule to convert a raw hex file into an hex file that can be directly imported in verilog files
+%.hex: %.bm_rawhex $(FIRMWARE_DIR)/TOOLS/firmware_words
+	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -verilog $(FIRMWARE_DIR)/../RTL/femtosoc_config.v -hex $@
+
+#Rule to convert an ELF binary into a raw hex file 
+%.rawhex: %.elf $(RV_BINARIES)
+	$(RVOBJCOPY) -O verilog $< $@
+	
+#Rule to convert a raw hex file into an executable (flat binary file), loadable by femtos exec function
+%.bin: %.rawhex $(FIRMWARE_DIR)/TOOLS/firmware_words
+	$(FIRMWARE_DIR)/TOOLS/firmware_words $< -verilog $(FIRMWARE_DIR)/../RTL/femtosoc_config.v -bin $@ -bin_start_addr 0x10000
+
+
+Keys:
+  up:    27 65
+  down:  27 66
+  right: 27 67  
+  left:  27 68
+  backspace: 8
+  return: 13
+  <ctrl><c>: 3  

@@ -1,0 +1,5 @@
+#!/bin/bash
+cd FIRMWARE/ASM_EXAMPLES
+make hello.sprog
+cd ../..
+make terminal

@@ -1,0 +1,18 @@
+set_io clk_led D1
+set_io RESET    C5
+set_io board_led    B6
+
+set_io SS           B1
+set_io spi_miso     E1
+set_io spi_mosi     B5 
+set_io spi_clk      B4 
+
+set_io TXD_T A1
+# set_io RXD_T E3
+
+
+set_io CLK_T E3
+
+set_io TXD B3
+
+set_io reset C6
