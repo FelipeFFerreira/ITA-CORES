@@ -306,6 +306,15 @@ Linux/Ubuntu 20.04 LTS distro.
    ![riscv-test-suite references](docs/rrun_device.gif)
 
 ---
+## Vídeos Demonstrativos
+
+Below are two links providing explanations and practical demonstrations of the SPI Test Interface integrated with the Framework:
+
+- ▶️ [SPI Test Interface](https://youtu.be/O8ok60ealTk)
+- ▶️ [Another Example](https://youtu.be/O8ok60ealTk)
+
+
+---
 ### 💌 Feedback & Contributions
 Your feedback and contributions are highly welcomed and appreciated! Feel free to improve any part of this project and submit your ideas and enhancements.
 
