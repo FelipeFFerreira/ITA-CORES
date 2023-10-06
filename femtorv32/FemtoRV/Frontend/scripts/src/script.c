@@ -80,11 +80,11 @@ int main() {
             break;
 
         case UNIT_TESTS:
-            Command(scriptfilePath_tooltchain, "make clean TESTDIR=peripheral-tests", true);
+            Command(scriptfilePath_tooltchain, "make clean TESTDIR=unit-tests", true);
             Loading();
             printf("\033[1;34m>>UNIT_TESTS\033[0m\n");
-            Command(scriptfilePath_tooltchain, "make peripheral-tests TESTDIR=peripheral-tests", true);
-            strcpy(type_test, "unit_tests");
+            Command(scriptfilePath_tooltchain, "make unit-tests TESTDIR=unit-tests ENV_FRONTEND_SIGNOFF=1", true);
+            strcpy(type_test, "unit-tests");
             break;
 
         case GENERAL_PROGRAMS:
@@ -116,33 +116,33 @@ int main() {
                 exit(10);
                 break;
             
-        case PERIPHERAL:
-            Command(scriptfilePath_tooltchain, "make clean TESTDIR=peripheral-tests", true);
-            Loading();
-            printf("\033[1;34m>>TESTS_FOR_PERIPHERALS\033[0m\n");
-            Command(scriptfilePath_tooltchain, "make peripheral-tests TESTDIR=peripheral-tests ENV_FRONTEND_SIGNOFF=1", true);
-            strcpy(type_test, "peripheral-tests");
+            case PERIPHERAL:
+                Command(scriptfilePath_tooltchain, "make clean TESTDIR=peripheral-tests", true);
+                Loading();
+                printf("\033[1;34m>>TESTS_FOR_PERIPHERALS\033[0m\n");
+                Command(scriptfilePath_tooltchain, "make peripheral-tests TESTDIR=peripheral-tests ENV_FRONTEND_SIGNOFF=1", true);
+                strcpy(type_test, "peripheral-tests");
             break;
 
-        case UNIT_TESTS:
-            Command(scriptfilePath_tooltchain, "make clean TESTDIR=peripheral-tests", true);
-            Loading();
-            printf("\033[1;34m>>UNIT_TESTS\033[0m\n");
-            Command(scriptfilePath_tooltchain, "make peripheral-tests TESTDIR=peripheral-tests", true);
-            strcpy(type_test, "peripheral-tests");
-            break;
+            case UNIT_TESTS:
+                Command(scriptfilePath_tooltchain, "make clean TESTDIR=unit-tests", true);
+                Loading();
+                printf("\033[1;34m>>UNIT_TESTS\033[0m\n");
+                Command(scriptfilePath_tooltchain, "make unit-tests TESTDIR=unit-tests ENV_FRONTEND_SIGNOFF=1", true);
+                strcpy(type_test, "unit-tests");
+                break;
 
-        case GENERAL_PROGRAMS:
-            Command(scriptfilePath_tooltchain, "make clean TESTDIR=peripheral-tests", true);
-            Loading();
-            printf("\033[1;34m>>GENERAL_PROGRAMS\033[0m\n");
-            printf("\033[1;33m>Currently only supported for devices that use external flash. Go to the directory 'Program_Test'\033[0m\n");
-            exit(2);
-            break;
+            case GENERAL_PROGRAMS:
+                Command(scriptfilePath_tooltchain, "make clean TESTDIR=peripheral-tests", true);
+                Loading();
+                printf("\033[1;34m>>GENERAL_PROGRAMS\033[0m\n");
+                printf("\033[1;33m>Currently only supported for devices that use external flash. Go to the directory 'Program_Test'\033[0m\n");
+                exit(2);
+                break;
         
-        default:
-            printf("\033[1;31m>Only the tools have been installed. Operation Canceled, because the provided test repository is invalid!\033[0m\n");
-            exit(10);
+            default:
+                printf("\033[1;31m>Only the tools have been installed. Operation Canceled, because the provided test repository is invalid!\033[0m\n");
+                exit(10);
         } 
 #endif
 

@@ -13,8 +13,8 @@
 
 #define REPO_COMPLIANCE_RISCV_ORG   "riscv-tests"
 #define REPO_RISCV_SUITE_LOWRISCV   "riscv-test-suite"
-#define REPO_UNIT_TESTS             "peripheral-tests"
-#define REPO_PERIPHERAL             "unit_tests"
+#define REPO_PERIPHERAL             "peripheral-tests"
+#define REPO_UNIT_TESTS             "unit-tests"
 #define REPO_GENERAL_PROGRAMS       "test-programs"
 
 #define BUFFER_SIZE 100
