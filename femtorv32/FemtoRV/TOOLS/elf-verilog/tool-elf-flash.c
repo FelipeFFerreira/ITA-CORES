@@ -20,13 +20,13 @@ int main(int argc, char *argv[])
     int count = 0;
     char file[50], file_destino[50], file_origem[50], linha[2000][2000], linha_h[1000];
     const char* directory_path = "../../build/"; 
-    const char* directory_path_file_base = "../../../RTL/spi_interface/flash_spi.v";
+    const char* directory_path_file_base = "../../../TOOLS/elf-verilog/test_interface_spi_base/flash_spi.v";
 
     if (argc > 1) {
         char *string = argv[1];
 
         snprintf(file, sizeof(file), "%s%s/%s_firmware.hex", directory_path, string, string);
-        printf("[ Gerando arquivo de síntese SPI-FLASH [%s] ]\n", string);
+        printf("\033[1;34m[ Generating SPI-FLASH synthesis file\033[0m \033[1;35m[%s]\033[0m \033[1;34m]\033[0m\n", string);
         FILE* fptr1 = mode_file(file, "r");
         sprintf(file_destino, "%s%s/%s_firmware_spi.v", directory_path, string, string);
         FILE* fptr2 = mode_file(file_destino, "w");
@@ -40,8 +40,8 @@ int main(int argc, char *argv[])
         fclose(fptr3);
 
         for (int j = 0; j < count; j++) {
-            if (strstr(linha[j], "always @(posedge reset_spi) begin")) {
-                fprintf(fptr2, "\talways @(posedge reset_spi) begin\n");
+            if (strstr(linha[j], "CMD_TEST_INTERFACE_SPI")) {
+                fprintf(fptr2, "\tinitial begin\n");
                 break;
             }
             else 
