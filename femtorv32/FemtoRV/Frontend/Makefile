@@ -1,5 +1,5 @@
 RISCV_GNU_TOOLCHAIN_GIT_REVISION = 411d134
-RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX = /opt/riscv32
+RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX = /opt/riscv3
 RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX_C = ../FIRMWARE/TOOLCHAIN/riscv64-unknown-elf-gcc-8.3.0-2020.04.0-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-
 
 SHELL = bash
@@ -19,6 +19,8 @@ DEPENDENCIES = riscv_test_macros.h compliance_test.h compliance_io.h
 else ifeq ($(TESTDIR), riscv-tests)
 DEPENDENCIES = riscv_test.h test_macros.h
 else ifeq ($(TESTDIR), peripheral-tests)
+DEPENDENCIES = 
+else ifeq ($(TESTDIR), unit-tests)
 DEPENDENCIES = 
 #$(error Invalid TESTDIR: $(TESTDIR))
 endif
