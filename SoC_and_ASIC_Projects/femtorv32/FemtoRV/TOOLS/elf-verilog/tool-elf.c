@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
         char *string = argv[1];
 
         snprintf(file, sizeof(file), "%s%s/%s.hex", directory_path, string, string);
-        printf("[ Formatando arquivo para o teste [%s]  %s]\n", string, file);
+        printf("\033[1;34m[ Formatting file for test\033[0m \033[1;35m[%s]\033[0m \033[1;34m %s]\033[0m\n", string, file);
         FILE* fptr1 = mode_file(file, "r");
         sprintf(file_destino, "%s%s/%s_firmware.hex", directory_path, string, string);
         FILE* fptr2 = mode_file(file_destino, "w");
