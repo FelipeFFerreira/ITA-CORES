@@ -185,9 +185,9 @@ Analysis of IR drop. When analyzing the figure, it is observed that the maximum 
 
 ---
 ## ✅ Chip completion
+Tap-Out
 ![tapout](docs/tapout.png)
 
-Tap-Out
 ---
 ![package](docs/package.png)
 
